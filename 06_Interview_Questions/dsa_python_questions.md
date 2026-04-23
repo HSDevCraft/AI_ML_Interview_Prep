@@ -1,5 +1,21 @@
 # DSA & Python Interview Questions Bank
 
+## Table of Contents
+1. [Arrays & Strings](#arrays--strings)
+2. [Sliding Window](#sliding-window)
+3. [Two Pointers](#two-pointers)
+4. [Linked Lists](#linked-lists)
+5. [Trees](#trees)
+6. [Graphs](#graphs)
+7. [Dynamic Programming](#dynamic-programming)
+8. [Binary Search](#binary-search)
+9. [Heaps & Priority Queues](#heaps--priority-queues)
+10. [Backtracking](#backtracking)
+11. [Python Interview Questions](#python-interview-questions)
+12. [Python Advanced Topics](#python-advanced-topics)
+
+---
+
 ## DSA Questions
 
 ### Arrays & Strings
@@ -92,6 +108,223 @@ def merge(intervals):
             merged.append([start, end])
     
     return merged
+```
+
+**Q5b: Product of Array Except Self**
+```python
+# Return array where output[i] = product of all elements except nums[i]
+# Time: O(n), Space: O(1) excluding output
+def product_except_self(nums):
+    n = len(nums)
+    result = [1] * n
+    
+    # Left pass: result[i] = product of all elements to the left
+    prefix = 1
+    for i in range(n):
+        result[i] = prefix
+        prefix *= nums[i]
+    
+    # Right pass: multiply by product of all elements to the right
+    suffix = 1
+    for i in range(n - 1, -1, -1):
+        result[i] *= suffix
+        suffix *= nums[i]
+    
+    return result
+```
+
+**Q5c: Maximum Subarray (Kadane's Algorithm)**
+```python
+# Find contiguous subarray with largest sum
+# Time: O(n), Space: O(1)
+def max_subarray(nums):
+    max_sum = current_sum = nums[0]
+    
+    for num in nums[1:]:
+        current_sum = max(num, current_sum + num)
+        max_sum = max(max_sum, current_sum)
+    
+    return max_sum
+
+# Variant: Return the subarray itself
+def max_subarray_with_indices(nums):
+    max_sum = current_sum = nums[0]
+    start = end = temp_start = 0
+    
+    for i in range(1, len(nums)):
+        if nums[i] > current_sum + nums[i]:
+            current_sum = nums[i]
+            temp_start = i
+        else:
+            current_sum += nums[i]
+        
+        if current_sum > max_sum:
+            max_sum = current_sum
+            start, end = temp_start, i
+    
+    return nums[start:end + 1], max_sum
+```
+
+---
+
+### Sliding Window
+
+**Q5d: Minimum Window Substring**
+```python
+# Find minimum window in s that contains all characters of t
+# Time: O(n), Space: O(k) where k is charset size
+from collections import Counter
+
+def min_window(s, t):
+    if not t or not s:
+        return ""
+    
+    t_count = Counter(t)
+    required = len(t_count)
+    
+    left = 0
+    formed = 0
+    window_counts = {}
+    
+    min_len = float('inf')
+    result = (0, 0)
+    
+    for right in range(len(s)):
+        char = s[right]
+        window_counts[char] = window_counts.get(char, 0) + 1
+        
+        if char in t_count and window_counts[char] == t_count[char]:
+            formed += 1
+        
+        while formed == required:
+            if right - left + 1 < min_len:
+                min_len = right - left + 1
+                result = (left, right)
+            
+            left_char = s[left]
+            window_counts[left_char] -= 1
+            if left_char in t_count and window_counts[left_char] < t_count[left_char]:
+                formed -= 1
+            left += 1
+    
+    return "" if min_len == float('inf') else s[result[0]:result[1] + 1]
+```
+
+**Q5e: Longest Repeating Character Replacement**
+```python
+# Max length substring with at most k character replacements
+# Time: O(n), Space: O(26)
+def character_replacement(s, k):
+    count = {}
+    max_count = 0
+    max_len = 0
+    left = 0
+    
+    for right in range(len(s)):
+        count[s[right]] = count.get(s[right], 0) + 1
+        max_count = max(max_count, count[s[right]])
+        
+        # Window size - most frequent char count > k means too many replacements
+        while (right - left + 1) - max_count > k:
+            count[s[left]] -= 1
+            left += 1
+        
+        max_len = max(max_len, right - left + 1)
+    
+    return max_len
+```
+
+**Q5f: Sliding Window Maximum**
+```python
+# Return max element in each sliding window of size k
+# Time: O(n), Space: O(k)
+from collections import deque
+
+def max_sliding_window(nums, k):
+    if not nums:
+        return []
+    
+    result = []
+    dq = deque()  # Store indices, decreasing order of values
+    
+    for i in range(len(nums)):
+        # Remove indices outside window
+        while dq and dq[0] < i - k + 1:
+            dq.popleft()
+        
+        # Remove smaller elements (they'll never be max)
+        while dq and nums[dq[-1]] < nums[i]:
+            dq.pop()
+        
+        dq.append(i)
+        
+        # Window is full, record max
+        if i >= k - 1:
+            result.append(nums[dq[0]])
+    
+    return result
+```
+
+---
+
+### Two Pointers
+
+**Q5g: Container With Most Water**
+```python
+# Find two lines that form container with most water
+# Time: O(n), Space: O(1)
+def max_area(height):
+    left, right = 0, len(height) - 1
+    max_water = 0
+    
+    while left < right:
+        width = right - left
+        h = min(height[left], height[right])
+        max_water = max(max_water, width * h)
+        
+        # Move the shorter line inward
+        if height[left] < height[right]:
+            left += 1
+        else:
+            right -= 1
+    
+    return max_water
+```
+
+**Q5h: 3Sum**
+```python
+# Find all unique triplets that sum to zero
+# Time: O(n²), Space: O(1) excluding output
+def three_sum(nums):
+    nums.sort()
+    result = []
+    
+    for i in range(len(nums) - 2):
+        # Skip duplicates
+        if i > 0 and nums[i] == nums[i - 1]:
+            continue
+        
+        left, right = i + 1, len(nums) - 1
+        target = -nums[i]
+        
+        while left < right:
+            current_sum = nums[left] + nums[right]
+            
+            if current_sum == target:
+                result.append([nums[i], nums[left], nums[right]])
+                # Skip duplicates
+                while left < right and nums[left] == nums[left + 1]:
+                    left += 1
+                while left < right and nums[right] == nums[right - 1]:
+                    right -= 1
+                left += 1
+                right -= 1
+            elif current_sum < target:
+                left += 1
+            else:
+                right -= 1
+    
+    return result
 ```
 
 ---
@@ -306,6 +539,354 @@ def ladder_length(begin_word, end_word, word_list):
     return 0
 ```
 
+**Q8b: Detect Cycle in Linked List (Floyd's Algorithm)**
+```python
+# Time: O(n), Space: O(1)
+def has_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow == fast:
+            return True
+    return False
+
+# Find cycle start
+def detect_cycle_start(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow == fast:
+            # Reset slow to head, move both at same speed
+            slow = head
+            while slow != fast:
+                slow = slow.next
+                fast = fast.next
+            return slow
+    return None
+```
+
+**Q8c: Copy List with Random Pointer**
+```python
+# Time: O(n), Space: O(1) - interleaving approach
+def copy_random_list(head):
+    if not head:
+        return None
+    
+    # Step 1: Create copies interleaved with originals
+    curr = head
+    while curr:
+        copy = Node(curr.val)
+        copy.next = curr.next
+        curr.next = copy
+        curr = copy.next
+    
+    # Step 2: Assign random pointers
+    curr = head
+    while curr:
+        if curr.random:
+            curr.next.random = curr.random.next
+        curr = curr.next.next
+    
+    # Step 3: Separate lists
+    curr = head
+    copy_head = head.next
+    while curr:
+        copy = curr.next
+        curr.next = copy.next
+        curr = curr.next
+        if curr:
+            copy.next = curr.next
+    
+    return copy_head
+```
+
+---
+
+### Binary Search
+
+**Q14b: Search in Rotated Sorted Array**
+```python
+# Time: O(log n), Space: O(1)
+def search_rotated(nums, target):
+    left, right = 0, len(nums) - 1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        
+        if nums[mid] == target:
+            return mid
+        
+        # Left half is sorted
+        if nums[left] <= nums[mid]:
+            if nums[left] <= target < nums[mid]:
+                right = mid - 1
+            else:
+                left = mid + 1
+        # Right half is sorted
+        else:
+            if nums[mid] < target <= nums[right]:
+                left = mid + 1
+            else:
+                right = mid - 1
+    
+    return -1
+```
+
+**Q14c: Find Minimum in Rotated Sorted Array**
+```python
+# Time: O(log n), Space: O(1)
+def find_min(nums):
+    left, right = 0, len(nums) - 1
+    
+    while left < right:
+        mid = (left + right) // 2
+        
+        if nums[mid] > nums[right]:
+            left = mid + 1
+        else:
+            right = mid
+    
+    return nums[left]
+```
+
+**Q14d: Koko Eating Bananas (Binary Search on Answer)**
+```python
+# Find minimum eating speed to finish within h hours
+# Time: O(n log m) where m is max pile size
+def min_eating_speed(piles, h):
+    def can_finish(speed):
+        hours = sum((pile + speed - 1) // speed for pile in piles)
+        return hours <= h
+    
+    left, right = 1, max(piles)
+    
+    while left < right:
+        mid = (left + right) // 2
+        if can_finish(mid):
+            right = mid
+        else:
+            left = mid + 1
+    
+    return left
+```
+
+**Q14e: Median of Two Sorted Arrays**
+```python
+# Time: O(log(min(m,n))), Space: O(1)
+def find_median_sorted_arrays(nums1, nums2):
+    # Ensure nums1 is smaller
+    if len(nums1) > len(nums2):
+        nums1, nums2 = nums2, nums1
+    
+    m, n = len(nums1), len(nums2)
+    left, right = 0, m
+    
+    while left <= right:
+        partition1 = (left + right) // 2
+        partition2 = (m + n + 1) // 2 - partition1
+        
+        max_left1 = float('-inf') if partition1 == 0 else nums1[partition1 - 1]
+        min_right1 = float('inf') if partition1 == m else nums1[partition1]
+        max_left2 = float('-inf') if partition2 == 0 else nums2[partition2 - 1]
+        min_right2 = float('inf') if partition2 == n else nums2[partition2]
+        
+        if max_left1 <= min_right2 and max_left2 <= min_right1:
+            if (m + n) % 2 == 0:
+                return (max(max_left1, max_left2) + min(min_right1, min_right2)) / 2
+            else:
+                return max(max_left1, max_left2)
+        elif max_left1 > min_right2:
+            right = partition1 - 1
+        else:
+            left = partition1 + 1
+    
+    return 0.0
+```
+
+---
+
+### Heaps & Priority Queues
+
+**Q14f: Top K Frequent Elements**
+```python
+# Time: O(n log k), Space: O(n)
+import heapq
+from collections import Counter
+
+def top_k_frequent(nums, k):
+    count = Counter(nums)
+    return heapq.nlargest(k, count.keys(), key=count.get)
+
+# Alternative: Bucket sort O(n)
+def top_k_frequent_bucket(nums, k):
+    count = Counter(nums)
+    buckets = [[] for _ in range(len(nums) + 1)]
+    
+    for num, freq in count.items():
+        buckets[freq].append(num)
+    
+    result = []
+    for i in range(len(buckets) - 1, -1, -1):
+        result.extend(buckets[i])
+        if len(result) >= k:
+            return result[:k]
+    
+    return result
+```
+
+**Q14g: Find Median from Data Stream**
+```python
+import heapq
+
+class MedianFinder:
+    def __init__(self):
+        self.small = []  # Max heap (negate values)
+        self.large = []  # Min heap
+    
+    def addNum(self, num):
+        # Add to max heap
+        heapq.heappush(self.small, -num)
+        
+        # Balance: ensure small's max <= large's min
+        if self.small and self.large and -self.small[0] > self.large[0]:
+            heapq.heappush(self.large, -heapq.heappop(self.small))
+        
+        # Balance sizes
+        if len(self.small) > len(self.large) + 1:
+            heapq.heappush(self.large, -heapq.heappop(self.small))
+        elif len(self.large) > len(self.small):
+            heapq.heappush(self.small, -heapq.heappop(self.large))
+    
+    def findMedian(self):
+        if len(self.small) > len(self.large):
+            return -self.small[0]
+        return (-self.small[0] + self.large[0]) / 2
+```
+
+**Q14h: Task Scheduler**
+```python
+# Time: O(n), Space: O(1)
+from collections import Counter
+
+def least_interval(tasks, n):
+    count = Counter(tasks)
+    max_freq = max(count.values())
+    max_count = sum(1 for freq in count.values() if freq == max_freq)
+    
+    # Formula: (max_freq - 1) * (n + 1) + max_count
+    # But can't be less than total tasks
+    return max(len(tasks), (max_freq - 1) * (n + 1) + max_count)
+```
+
+---
+
+### Backtracking
+
+**Q14i: Subsets**
+```python
+# Time: O(n * 2^n), Space: O(n)
+def subsets(nums):
+    result = []
+    
+    def backtrack(start, current):
+        result.append(current[:])
+        
+        for i in range(start, len(nums)):
+            current.append(nums[i])
+            backtrack(i + 1, current)
+            current.pop()
+    
+    backtrack(0, [])
+    return result
+
+# Iterative approach
+def subsets_iterative(nums):
+    result = [[]]
+    for num in nums:
+        result += [subset + [num] for subset in result]
+    return result
+```
+
+**Q14j: Permutations**
+```python
+# Time: O(n * n!), Space: O(n)
+def permute(nums):
+    result = []
+    
+    def backtrack(current, remaining):
+        if not remaining:
+            result.append(current[:])
+            return
+        
+        for i in range(len(remaining)):
+            current.append(remaining[i])
+            backtrack(current, remaining[:i] + remaining[i+1:])
+            current.pop()
+    
+    backtrack([], nums)
+    return result
+```
+
+**Q14k: Combination Sum**
+```python
+# Time: O(2^target), Space: O(target)
+def combination_sum(candidates, target):
+    result = []
+    
+    def backtrack(start, current, remaining):
+        if remaining == 0:
+            result.append(current[:])
+            return
+        if remaining < 0:
+            return
+        
+        for i in range(start, len(candidates)):
+            current.append(candidates[i])
+            backtrack(i, current, remaining - candidates[i])  # Can reuse
+            current.pop()
+    
+    backtrack(0, [], target)
+    return result
+```
+
+**Q14l: N-Queens**
+```python
+# Time: O(n!), Space: O(n)
+def solve_n_queens(n):
+    result = []
+    board = [['.'] * n for _ in range(n)]
+    
+    cols = set()
+    diag1 = set()  # row - col
+    diag2 = set()  # row + col
+    
+    def backtrack(row):
+        if row == n:
+            result.append([''.join(r) for r in board])
+            return
+        
+        for col in range(n):
+            if col in cols or (row - col) in diag1 or (row + col) in diag2:
+                continue
+            
+            board[row][col] = 'Q'
+            cols.add(col)
+            diag1.add(row - col)
+            diag2.add(row + col)
+            
+            backtrack(row + 1)
+            
+            board[row][col] = '.'
+            cols.remove(col)
+            diag1.remove(row - col)
+            diag2.remove(row + col)
+    
+    backtrack(0)
+    return result
+```
+
 ---
 
 ### Dynamic Programming
@@ -364,6 +945,263 @@ def num_decodings(s):
             dp[i] += dp[i-2]
     
     return dp[n]
+```
+
+**Q17b: House Robber**
+```python
+# Can't rob adjacent houses. Time: O(n), Space: O(1)
+def rob(nums):
+    if not nums:
+        return 0
+    if len(nums) == 1:
+        return nums[0]
+    
+    prev2, prev1 = 0, 0
+    for num in nums:
+        curr = max(prev1, prev2 + num)
+        prev2, prev1 = prev1, curr
+    
+    return prev1
+
+# House Robber II: Houses in a circle
+def rob_circular(nums):
+    if len(nums) == 1:
+        return nums[0]
+    return max(rob(nums[:-1]), rob(nums[1:]))
+```
+
+**Q17c: Coin Change**
+```python
+# Minimum coins to make amount. Time: O(amount * n), Space: O(amount)
+def coin_change(coins, amount):
+    dp = [float('inf')] * (amount + 1)
+    dp[0] = 0
+    
+    for i in range(1, amount + 1):
+        for coin in coins:
+            if coin <= i:
+                dp[i] = min(dp[i], dp[i - coin] + 1)
+    
+    return dp[amount] if dp[amount] != float('inf') else -1
+```
+
+**Q17d: Longest Common Subsequence**
+```python
+# Time: O(m*n), Space: O(min(m,n))
+def longest_common_subsequence(text1, text2):
+    if len(text1) < len(text2):
+        text1, text2 = text2, text1
+    
+    prev = [0] * (len(text2) + 1)
+    
+    for i in range(1, len(text1) + 1):
+        curr = [0] * (len(text2) + 1)
+        for j in range(1, len(text2) + 1):
+            if text1[i-1] == text2[j-1]:
+                curr[j] = prev[j-1] + 1
+            else:
+                curr[j] = max(prev[j], curr[j-1])
+        prev = curr
+    
+    return prev[-1]
+```
+
+**Q17e: Edit Distance**
+```python
+# Minimum operations to convert word1 to word2
+# Time: O(m*n), Space: O(n)
+def min_distance(word1, word2):
+    m, n = len(word1), len(word2)
+    prev = list(range(n + 1))
+    
+    for i in range(1, m + 1):
+        curr = [i] + [0] * n
+        for j in range(1, n + 1):
+            if word1[i-1] == word2[j-1]:
+                curr[j] = prev[j-1]
+            else:
+                curr[j] = 1 + min(prev[j], curr[j-1], prev[j-1])
+        prev = curr
+    
+    return prev[n]
+```
+
+**Q17f: Unique Paths**
+```python
+# Robot in grid, can only move right or down
+# Time: O(m*n), Space: O(n)
+def unique_paths(m, n):
+    dp = [1] * n
+    
+    for _ in range(1, m):
+        for j in range(1, n):
+            dp[j] += dp[j-1]
+    
+    return dp[-1]
+
+# With obstacles
+def unique_paths_with_obstacles(grid):
+    m, n = len(grid), len(grid[0])
+    dp = [0] * n
+    dp[0] = 1
+    
+    for i in range(m):
+        for j in range(n):
+            if grid[i][j] == 1:
+                dp[j] = 0
+            elif j > 0:
+                dp[j] += dp[j-1]
+    
+    return dp[-1]
+```
+
+**Q17g: Partition Equal Subset Sum (0/1 Knapsack variant)**
+```python
+# Can array be partitioned into two equal sum subsets?
+# Time: O(n * sum), Space: O(sum)
+def can_partition(nums):
+    total = sum(nums)
+    if total % 2 != 0:
+        return False
+    
+    target = total // 2
+    dp = [False] * (target + 1)
+    dp[0] = True
+    
+    for num in nums:
+        for j in range(target, num - 1, -1):
+            dp[j] = dp[j] or dp[j - num]
+    
+    return dp[target]
+```
+
+---
+
+### Interval Problems
+
+**Q17h: Meeting Rooms II (Minimum Rooms)**
+```python
+# Time: O(n log n), Space: O(n)
+import heapq
+
+def min_meeting_rooms(intervals):
+    if not intervals:
+        return 0
+    
+    intervals.sort(key=lambda x: x[0])
+    heap = []  # End times
+    
+    for start, end in intervals:
+        if heap and heap[0] <= start:
+            heapq.heappop(heap)
+        heapq.heappush(heap, end)
+    
+    return len(heap)
+```
+
+**Q17i: Non-overlapping Intervals**
+```python
+# Minimum intervals to remove to make non-overlapping
+# Time: O(n log n), Space: O(1)
+def erase_overlap_intervals(intervals):
+    if not intervals:
+        return 0
+    
+    intervals.sort(key=lambda x: x[1])  # Sort by end time
+    end = intervals[0][1]
+    count = 0
+    
+    for i in range(1, len(intervals)):
+        if intervals[i][0] < end:
+            count += 1
+        else:
+            end = intervals[i][1]
+    
+    return count
+```
+
+---
+
+### Trie Problems
+
+**Q17j: Implement Trie**
+```python
+class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self.is_end = False
+
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+    
+    def insert(self, word):
+        node = self.root
+        for char in word:
+            if char not in node.children:
+                node.children[char] = TrieNode()
+            node = node.children[char]
+        node.is_end = True
+    
+    def search(self, word):
+        node = self._traverse(word)
+        return node is not None and node.is_end
+    
+    def starts_with(self, prefix):
+        return self._traverse(prefix) is not None
+    
+    def _traverse(self, s):
+        node = self.root
+        for char in s:
+            if char not in node.children:
+                return None
+            node = node.children[char]
+        return node
+```
+
+**Q17k: Word Search II**
+```python
+# Find all words from dictionary in board
+# Time: O(m*n*4^L + W*L), Space: O(W*L)
+def find_words(board, words):
+    # Build trie
+    trie = {}
+    for word in words:
+        node = trie
+        for char in word:
+            node = node.setdefault(char, {})
+        node['$'] = word
+    
+    result = []
+    rows, cols = len(board), len(board[0])
+    
+    def dfs(r, c, node):
+        char = board[r][c]
+        if char not in node:
+            return
+        
+        next_node = node[char]
+        if '$' in next_node:
+            result.append(next_node.pop('$'))
+        
+        board[r][c] = '#'  # Mark visited
+        
+        for dr, dc in [(0,1), (0,-1), (1,0), (-1,0)]:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] != '#':
+                dfs(nr, nc, next_node)
+        
+        board[r][c] = char
+        
+        # Prune empty branches
+        if not next_node:
+            node.pop(char)
+    
+    for r in range(rows):
+        for c in range(cols):
+            dfs(r, c, trie)
+    
+    return result
 ```
 
 ---
@@ -699,6 +1537,317 @@ for item in lst:
 
 # Fix: iterate over copy or use comprehension
 lst = [x for x in lst if x % 2 != 0]
+```
+
+---
+
+## Python Advanced Topics
+
+### Q14: Memory Management and Garbage Collection
+```python
+# Reference counting + cyclic garbage collector
+import sys
+import gc
+
+a = [1, 2, 3]
+print(sys.getrefcount(a))  # Reference count (includes function arg)
+
+# Cyclic references
+class Node:
+    def __init__(self):
+        self.ref = None
+
+n1 = Node()
+n2 = Node()
+n1.ref = n2
+n2.ref = n1  # Cycle!
+
+del n1, n2  # Won't free immediately - needs gc
+
+gc.collect()  # Force garbage collection
+
+# Weak references (don't increase ref count)
+import weakref
+
+class Cache:
+    def __init__(self):
+        self._cache = weakref.WeakValueDictionary()
+    
+    def get(self, key):
+        return self._cache.get(key)
+    
+    def set(self, key, value):
+        self._cache[key] = value
+```
+
+### Q15: Threading vs Multiprocessing
+```python
+import threading
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+
+# Threading: Good for I/O-bound tasks
+def io_bound_task(url):
+    # Network request, file I/O, etc.
+    pass
+
+with ThreadPoolExecutor(max_workers=10) as executor:
+    results = list(executor.map(io_bound_task, urls))
+
+# Multiprocessing: Good for CPU-bound tasks
+def cpu_bound_task(data):
+    # Heavy computation
+    return sum(x**2 for x in data)
+
+with ProcessPoolExecutor() as executor:
+    results = list(executor.map(cpu_bound_task, data_chunks))
+
+# Sharing data between processes
+from multiprocessing import Manager, Queue, Value, Array
+
+manager = Manager()
+shared_dict = manager.dict()
+shared_list = manager.list()
+
+# Lock for thread safety
+lock = threading.Lock()
+
+def thread_safe_increment(counter):
+    with lock:
+        counter['value'] += 1
+```
+
+### Q16: Python Data Model (Dunder Methods)
+```python
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    # String representations
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
+    
+    def __str__(self):
+        return f"({self.x}, {self.y})"
+    
+    # Arithmetic operators
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+    
+    def __mul__(self, scalar):
+        return Vector(self.x * scalar, self.y * scalar)
+    
+    def __rmul__(self, scalar):
+        return self.__mul__(scalar)
+    
+    # Comparison
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
+    def __lt__(self, other):
+        return (self.x**2 + self.y**2) < (other.x**2 + other.y**2)
+    
+    # Container behavior
+    def __len__(self):
+        return 2
+    
+    def __getitem__(self, index):
+        return (self.x, self.y)[index]
+    
+    def __iter__(self):
+        yield self.x
+        yield self.y
+    
+    # Hashing (required for set/dict keys)
+    def __hash__(self):
+        return hash((self.x, self.y))
+    
+    # Context manager
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+    
+    # Callable
+    def __call__(self):
+        return (self.x**2 + self.y**2) ** 0.5
+```
+
+### Q17: Type Hints and Protocols
+```python
+from typing import (
+    List, Dict, Optional, Union, Callable, TypeVar, Generic,
+    Protocol, runtime_checkable, Literal, overload
+)
+
+# Basic type hints
+def greet(name: str) -> str:
+    return f"Hello, {name}"
+
+# Generic types
+T = TypeVar('T')
+
+def first(items: List[T]) -> Optional[T]:
+    return items[0] if items else None
+
+# Generic classes
+class Stack(Generic[T]):
+    def __init__(self):
+        self._items: List[T] = []
+    
+    def push(self, item: T) -> None:
+        self._items.append(item)
+    
+    def pop(self) -> T:
+        return self._items.pop()
+
+# Protocols (structural subtyping)
+@runtime_checkable
+class Drawable(Protocol):
+    def draw(self) -> None: ...
+
+class Circle:
+    def draw(self) -> None:
+        print("Drawing circle")
+
+# Circle is Drawable without explicit inheritance
+def render(obj: Drawable) -> None:
+    obj.draw()
+
+# Function overloads
+@overload
+def process(x: int) -> int: ...
+@overload
+def process(x: str) -> str: ...
+
+def process(x):
+    if isinstance(x, int):
+        return x * 2
+    return x.upper()
+
+# Literal types
+Mode = Literal["r", "w", "a"]
+
+def open_file(path: str, mode: Mode) -> None:
+    pass
+```
+
+### Q18: Slots and Memory Optimization
+```python
+# Regular class uses __dict__ for attributes
+class RegularPoint:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+# Slots class uses fixed array
+class SlottedPoint:
+    __slots__ = ('x', 'y')
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+# Memory comparison
+import sys
+regular = RegularPoint(1, 2)
+slotted = SlottedPoint(1, 2)
+
+print(sys.getsizeof(regular.__dict__))  # ~104 bytes
+# slotted has no __dict__, saves ~40-50% memory per instance
+
+# Slots with inheritance
+class SlottedPoint3D(SlottedPoint):
+    __slots__ = ('z',)  # Only add new slots
+    
+    def __init__(self, x, y, z):
+        super().__init__(x, y)
+        self.z = z
+```
+
+### Q19: Dataclasses and Named Tuples
+```python
+from dataclasses import dataclass, field, asdict, astuple
+from typing import NamedTuple
+
+# Dataclass
+@dataclass
+class Person:
+    name: str
+    age: int
+    email: str = ""
+    tags: list = field(default_factory=list)
+    
+    def __post_init__(self):
+        if self.age < 0:
+            raise ValueError("Age cannot be negative")
+
+# Frozen (immutable) dataclass
+@dataclass(frozen=True)
+class Point:
+    x: float
+    y: float
+
+# Named tuple (immutable, memory efficient)
+class Coordinate(NamedTuple):
+    x: float
+    y: float
+    z: float = 0.0
+
+coord = Coordinate(1.0, 2.0)
+x, y, z = coord  # Unpacking works
+coord.x  # Named access works
+
+# Conversion
+person = Person("Alice", 30)
+asdict(person)   # {'name': 'Alice', 'age': 30, ...}
+astuple(person)  # ('Alice', 30, '', [])
+```
+
+### Q20: Testing in Python
+```python
+import pytest
+from unittest.mock import Mock, patch, MagicMock
+
+# Basic pytest
+def test_addition():
+    assert 1 + 1 == 2
+
+# Fixtures
+@pytest.fixture
+def database():
+    db = Database()
+    db.connect()
+    yield db
+    db.disconnect()
+
+def test_query(database):
+    result = database.query("SELECT * FROM users")
+    assert len(result) > 0
+
+# Parametrized tests
+@pytest.mark.parametrize("input,expected", [
+    ("hello", 5),
+    ("", 0),
+    ("world", 5),
+])
+def test_length(input, expected):
+    assert len(input) == expected
+
+# Mocking
+def test_api_call():
+    with patch('requests.get') as mock_get:
+        mock_get.return_value.json.return_value = {'status': 'ok'}
+        result = fetch_data()
+        assert result['status'] == 'ok'
+        mock_get.assert_called_once()
+
+# Exception testing
+def test_raises():
+    with pytest.raises(ValueError, match="invalid"):
+        raise ValueError("invalid input")
 ```
 
 ---

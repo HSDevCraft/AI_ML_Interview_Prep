@@ -1,5 +1,25 @@
 # Machine Learning Fundamentals - Complete Guide
 
+## 📚 Detailed Topic Guides
+
+This folder contains comprehensive in-depth guides for each ML topic:
+
+| File | Topic | Key Concepts |
+|------|-------|--------------|
+| [01_mathematical_foundations.md](01_mathematical_foundations.md) | Math Foundations | Linear Algebra, Calculus, Probability, Statistics, Optimization |
+| [02_supervised_learning.md](02_supervised_learning.md) | Supervised Learning | Regression, Classification, Trees, SVM, Ensembles |
+| [03_unsupervised_learning.md](03_unsupervised_learning.md) | Unsupervised Learning | Clustering, Dimensionality Reduction, Anomaly Detection |
+| [04_model_evaluation.md](04_model_evaluation.md) | Model Evaluation | Metrics, Cross-Validation, Hyperparameter Tuning, Bias-Variance |
+| [05_feature_engineering.md](05_feature_engineering.md) | Feature Engineering | Preprocessing, Scaling, Encoding, Selection, Imbalanced Data |
+
+---
+
+## Quick Reference Guide
+
+This file provides a quick reference. **For in-depth explanations and interview questions, see the detailed guides above.**
+
+---
+
 ## 1. Mathematical Foundations
 
 ### Linear Algebra

@@ -1,5 +1,15 @@
 # ML/DL/GenAI Interview Questions Bank
 
+## Table of Contents
+1. [Machine Learning Questions](#machine-learning-questions)
+2. [Deep Learning Questions](#deep-learning-questions)
+3. [GenAI & LLM Questions](#genai--llm-questions)
+4. [MLOps Questions](#mlops-questions)
+5. [System Design Questions](#system-design-questions)
+6. [Behavioral Questions](#behavioral-questions)
+
+---
+
 ## Machine Learning Questions
 
 ### Q1: Explain Bias-Variance Tradeoff
@@ -856,9 +866,334 @@ Variations:
 
 ---
 
+## MLOps Questions
+
+### Q31: Explain the ML lifecycle and MLOps
+```
+ML Lifecycle Stages:
+
+1. Problem Definition
+   - Business requirements
+   - Success metrics
+   - Constraints (latency, cost)
+
+2. Data Collection & Preparation
+   - Data sources
+   - Labeling strategy
+   - Data versioning
+
+3. Feature Engineering
+   - Feature extraction
+   - Feature store
+   - Feature validation
+
+4. Model Development
+   - Experimentation
+   - Hyperparameter tuning
+   - Model selection
+
+5. Model Evaluation
+   - Offline metrics
+   - A/B testing
+   - Shadow deployment
+
+6. Deployment
+   - Model serving
+   - Scaling
+   - Versioning
+
+7. Monitoring & Maintenance
+   - Performance monitoring
+   - Data drift detection
+   - Retraining triggers
+
+MLOps = ML + DevOps + Data Engineering
+- Automate the lifecycle
+- Ensure reproducibility
+- Enable collaboration
+- Maintain production systems
+```
+
+### Q32: What is model drift and how do you detect it?
+```
+Types of Drift:
+
+1. Data Drift (Covariate Shift)
+   - Input distribution changes
+   - P(X) changes, P(Y|X) same
+   - Example: New user demographics
+
+2. Concept Drift
+   - Relationship between X and Y changes
+   - P(Y|X) changes
+   - Example: Customer preferences change
+
+3. Label Drift
+   - Output distribution changes
+   - P(Y) changes
+   - Example: Seasonal demand shifts
+
+Detection Methods:
+
+Statistical Tests:
+- KS test: Compare distributions
+- Chi-squared: Categorical features
+- PSI (Population Stability Index)
+- KL divergence
+
+Monitoring Metrics:
+- Feature statistics (mean, std, quantiles)
+- Prediction distribution
+- Model performance over time
+
+PSI Formula:
+PSI = Σ (Actual% - Expected%) × ln(Actual% / Expected%)
+- PSI < 0.1: No drift
+- 0.1 < PSI < 0.25: Moderate drift
+- PSI > 0.25: Significant drift
+
+Response to Drift:
+- Alert and investigate
+- Retrain with recent data
+- Update feature engineering
+- Roll back if necessary
+```
+
+### Q33: Explain feature stores
+```
+Feature Store: Centralized repository for features
+
+Components:
+1. Online Store (low latency)
+   - Redis, DynamoDB
+   - Real-time serving
+
+2. Offline Store (batch)
+   - Data warehouse
+   - Training data generation
+
+3. Feature Registry
+   - Metadata
+   - Versioning
+   - Documentation
+
+Benefits:
+- Consistency between training and serving
+- Feature reuse across teams
+- Point-in-time correctness
+- Reduced training-serving skew
+
+Popular Tools:
+- Feast (open source)
+- Tecton
+- AWS Feature Store
+- Databricks Feature Store
+
+Example workflow:
+1. Data scientist creates feature
+2. Feature registered in store
+3. Training: Pull features for date range
+4. Serving: Pull features in real-time
+5. Both use same feature definitions
+```
+
+### Q34: How do you version ML models and data?
+```
+Model Versioning:
+
+What to track:
+- Model architecture
+- Hyperparameters
+- Training data version
+- Feature versions
+- Metrics
+- Code version
+
+Tools:
+- MLflow: Experiments, models, artifacts
+- DVC: Data version control
+- Weights & Biases: Experiment tracking
+- Neptune.ai
+
+Model Registry:
+- Store trained models
+- Stage management (staging → production)
+- A/B testing support
+- Rollback capability
+
+Data Versioning:
+
+Challenges:
+- Large datasets
+- Frequent updates
+- Reproducibility
+
+Approaches:
+- DVC: Git-like for data
+- Delta Lake: ACID transactions
+- Immutable snapshots
+- Time-travel queries
+
+Best Practices:
+- Version everything together (code, data, config)
+- Automate with CI/CD
+- Store lineage information
+- Regular cleanup of old versions
+```
+
+### Q35: Explain model serving architectures
+```
+Serving Patterns:
+
+1. Batch Prediction
+   - Pre-compute predictions
+   - Store in database
+   - Low latency retrieval
+   - Use when: Predictions don't change quickly
+
+2. Online Prediction
+   - Real-time inference
+   - Synchronous API call
+   - Use when: Need fresh predictions
+
+3. Streaming Prediction
+   - Process events as they arrive
+   - Kafka, Flink, etc.
+   - Use when: Event-driven systems
+
+Deployment Strategies:
+
+1. Shadow Mode
+   - New model runs alongside production
+   - Compare outputs, no user impact
+   - Validate before rollout
+
+2. Canary Deployment
+   - Route small % to new model
+   - Monitor metrics
+   - Gradually increase traffic
+
+3. Blue-Green
+   - Two production environments
+   - Switch traffic atomically
+   - Easy rollback
+
+4. A/B Testing
+   - Split traffic randomly
+   - Measure business metrics
+   - Statistical significance
+
+Serving Infrastructure:
+- TensorFlow Serving
+- TorchServe
+- Triton Inference Server
+- Seldon Core
+- KServe
+```
+
+### Q36: What is CI/CD for ML?
+```
+CI/CD Pipeline for ML:
+
+Continuous Integration:
+1. Code changes trigger pipeline
+2. Unit tests (data validation, feature tests)
+3. Integration tests
+4. Model training (on sample data)
+5. Model validation (metrics thresholds)
+
+Continuous Delivery:
+1. Full model training
+2. Model evaluation
+3. Model registration
+4. Staging deployment
+5. Integration tests
+6. Performance tests
+
+Continuous Training:
+- Automated retraining triggers
+- Data freshness checks
+- Drift detection
+- Scheduled retraining
+
+Pipeline Stages:
+```
+Code → Build → Test → Train → Evaluate → Register → Deploy → Monitor
+```
+
+Tools:
+- GitHub Actions / GitLab CI
+- Kubeflow Pipelines
+- Airflow
+- MLflow
+- Argo Workflows
+
+Testing for ML:
+- Data validation tests
+- Feature pipeline tests
+- Model performance tests
+- Integration tests
+- Load tests
+- Fairness tests
+```
+
+### Q37: How do you monitor ML models in production?
+```
+Monitoring Categories:
+
+1. System Metrics
+   - Latency (p50, p95, p99)
+   - Throughput (requests/sec)
+   - Error rates
+   - Resource utilization
+
+2. Data Metrics
+   - Input distribution
+   - Missing values
+   - Feature ranges
+   - Cardinality
+
+3. Model Metrics
+   - Prediction distribution
+   - Confidence scores
+   - Feature importance stability
+
+4. Business Metrics
+   - Conversion rate
+   - Revenue impact
+   - User engagement
+
+Alerting Strategy:
+
+Thresholds:
+- Absolute: Latency > 100ms
+- Relative: 2x baseline
+- Trend: Increasing error rate
+
+Alert Levels:
+- Warning: Investigate soon
+- Critical: Immediate action
+- Page: Wake someone up
+
+Dashboards:
+- Real-time predictions
+- Model performance over time
+- A/B test results
+- Drift indicators
+
+Tools:
+- Prometheus + Grafana
+- Datadog
+- Evidently AI (ML-specific)
+- WhyLabs
+- Arize AI
+```
+
+---
+
 ## System Design Questions
 
-### Q31: Design a recommendation system
+### Q38: Design a recommendation system
 ```
 Requirements clarification:
 - What are we recommending? (products, content, etc.)

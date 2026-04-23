@@ -1,5 +1,29 @@
 # Data Structures & Algorithms - Complete Guide
 
+## 📚 Detailed Topic Guides
+
+This folder contains comprehensive in-depth guides for each DSA topic:
+
+| File | Topic | Key Concepts |
+|------|-------|--------------|
+| [01_arrays_strings.md](01_arrays_strings.md) | Arrays & Strings | Two Pointers, Sliding Window, Prefix Sum, Kadane's, Matrix, KMP |
+| [02_linked_lists.md](02_linked_lists.md) | Linked Lists | Fast/Slow Pointers, Reversal, Merge, LRU/LFU Cache |
+| [03_stacks_queues.md](03_stacks_queues.md) | Stacks & Queues | Monotonic Stack/Queue, Expression Parsing, BFS |
+| [04_trees.md](04_trees.md) | Trees | Traversals, BST, Construction, Path Problems, LCA, Serialization |
+| [05_graphs.md](05_graphs.md) | Graphs | BFS/DFS, Dijkstra, Bellman-Ford, Topological Sort, Union-Find, MST |
+| [06_dynamic_programming.md](06_dynamic_programming.md) | Dynamic Programming | 1D/2D DP, String DP, Knapsack, State Machine, Interval DP, Bitmask |
+| [07_heaps_priority_queues.md](07_heaps_priority_queues.md) | Heaps | Top K, Merge K Lists, Two Heaps Pattern, Median Stream |
+| [08_tries_advanced.md](08_tries_advanced.md) | Tries & Advanced | Trie, Segment Tree, Fenwick Tree, Bit Manipulation |
+| [09_sorting_searching.md](09_sorting_searching.md) | Sorting & Searching | All Sorting Algorithms, Binary Search Patterns, Quick Select |
+
+---
+
+## Quick Reference Guide
+
+This file provides a quick reference. **For in-depth explanations and more problems, see the detailed guides above.**
+
+---
+
 ## 1. Arrays & Strings
 
 ### Time Complexities

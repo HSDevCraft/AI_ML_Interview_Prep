@@ -1,5 +1,25 @@
 # Python In-Depth - Complete Guide
 
+## 📚 Detailed Topic Guides
+
+This folder contains comprehensive in-depth guides for each Python topic:
+
+| File | Topic | Key Concepts |
+|------|-------|--------------|
+| [01_memory_model_internals.md](01_memory_model_internals.md) | Memory Model & Internals | Object Model, GC, Reference Counting, CPython, Data Type Internals |
+| [02_functions_decorators.md](02_functions_decorators.md) | Functions & Decorators | First-Class Functions, Closures, LEGB, Decorator Patterns, functools |
+| [03_oop_metaclasses.md](03_oop_metaclasses.md) | OOP & Metaclasses | Inheritance, MRO, Magic Methods, Descriptors, Metaclasses |
+| [04_concurrency.md](04_concurrency.md) | Concurrency | Threading, Multiprocessing, Asyncio, GIL, Synchronization |
+| [05_iterators_generators.md](05_iterators_generators.md) | Iterators & Generators | Iterator Protocol, Generators, itertools, Context Managers |
+
+---
+
+## Quick Reference Guide
+
+This file provides a quick reference. **For in-depth explanations and interview questions, see the detailed guides above.**
+
+---
+
 ## 1. Python Memory Model & Object System
 
 ### Everything is an Object

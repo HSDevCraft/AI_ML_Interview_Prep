@@ -1,5 +1,26 @@
 # Generative AI & Large Language Models - Complete Guide
 
+## 📚 Detailed Topic Guides
+
+This folder contains comprehensive in-depth guides for each GenAI/LLM topic:
+
+| File | Topic | Key Concepts |
+|------|-------|--------------|
+| [01_llm_fundamentals.md](01_llm_fundamentals.md) | LLM Fundamentals | Architecture evolution, Decoder-only models, Tokenization, Pre-training, Scaling laws |
+| [02_finetuning_alignment.md](02_finetuning_alignment.md) | Fine-tuning & Alignment | LoRA, QLoRA, Adapters, RLHF, DPO, PEFT methods |
+| [03_prompt_engineering.md](03_prompt_engineering.md) | Prompt Engineering | Zero/few-shot, CoT, ReAct, Self-consistency, Structured output |
+| [04_rag.md](04_rag.md) | RAG | Document processing, Embeddings, Vector DBs, Hybrid search, Reranking |
+| [05_agents_tools.md](05_agents_tools.md) | Agents & Tools | Tool use, Function calling, ReAct, Memory systems, Multi-agent |
+| [06_evaluation_production.md](06_evaluation_production.md) | Evaluation & Production | Metrics, Benchmarks, LLM-as-Judge, Inference optimization, Deployment |
+
+---
+
+## Quick Reference Guide
+
+This file provides a quick reference. **For in-depth explanations and interview questions, see the detailed guides above.**
+
+---
+
 ## 1. LLM Fundamentals
 
 ### Architecture Evolution

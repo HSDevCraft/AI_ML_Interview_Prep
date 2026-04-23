@@ -1,5 +1,25 @@
 # Deep Learning - Complete Guide
 
+## 📚 Detailed Topic Guides
+
+This folder contains comprehensive in-depth guides for each Deep Learning topic:
+
+| File | Topic | Key Concepts |
+|------|-------|--------------|
+| [01_neural_network_fundamentals.md](01_neural_network_fundamentals.md) | NN Fundamentals | Perceptron, MLP, Activations, Loss Functions, Optimizers, Backprop |
+| [02_cnns.md](02_cnns.md) | CNNs | Convolution, Pooling, ResNet, VGG, Object Detection, Segmentation |
+| [03_rnns_sequence_models.md](03_rnns_sequence_models.md) | RNNs & Sequences | LSTM, GRU, Bidirectional, Seq2Seq, Attention Mechanisms |
+| [04_transformers.md](04_transformers.md) | Transformers | Self-Attention, Multi-Head, Positional Encoding, BERT, GPT |
+| [05_training_techniques.md](05_training_techniques.md) | Training Techniques | Transfer Learning, Distributed Training, Compression, Debugging |
+
+---
+
+## Quick Reference Guide
+
+This file provides a quick reference. **For in-depth explanations and interview questions, see the detailed guides above.**
+
+---
+
 ## 1. Neural Network Fundamentals
 
 ### Perceptron & MLP
