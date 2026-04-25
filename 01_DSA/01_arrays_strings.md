@@ -1,5 +1,74 @@
 # Arrays & Strings - Complete In-Depth Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Arrays and strings account for ~40% of coding interview problems. Master two pointers and sliding window — they convert O(n²) brute-force solutions into O(n).
+
+### Pattern Recognition
+
+```
+Problem asks for...               Use this pattern
+──────────────────────────────────────────────────
+Pair/triplet in sorted array    → Two Pointers (opposite ends)
+Remove duplicates in-place       → Two Pointers (fast/slow)
+Subarray/substring of size k    → Fixed Sliding Window
+Longest subarray satisfying X   → Variable Sliding Window
+Subarray sum equals target       → Prefix Sum + HashMap
+Contiguous subarray max sum      → Kadane's Algorithm
+```
+
+### Edge Cases — Always Mention These
+
+```
+Empty array/string:    if not nums: return ...
+Single element:        len(nums) == 1 → often trivial
+All same elements:     [5,5,5,5] → check for duplicates logic
+All negative:          max_sum = nums[0] (not 0) in Kadane's
+Integer overflow:      use Python (unlimited int) or check bounds
+Sorted vs unsorted:    sorted enables binary search, two pointers
+```
+
+### Two Pointers Template
+
+```python
+left, right = 0, len(arr) - 1
+while left < right:
+    if condition_met(arr[left], arr[right]):
+        # process result
+        left += 1; right -= 1
+    elif need_larger:
+        left += 1
+    else:
+        right -= 1
+```
+
+### Sliding Window Template (Variable)
+
+```python
+left = 0
+window_state = {}           # track what's in window
+result = 0
+for right in range(len(s)):
+    # 1. Expand window (add s[right])
+    window_state[s[right]] = window_state.get(s[right], 0) + 1
+    # 2. Shrink window while invalid
+    while window_is_invalid(window_state):
+        window_state[s[left]] -= 1
+        if window_state[s[left]] == 0:
+            del window_state[s[left]]
+        left += 1
+    # 3. Update result with valid window
+    result = max(result, right - left + 1)
+```
+
+### 🚨 Top Interview Pitfalls
+- **Off-by-one**: sliding window length = `right - left + 1`, not `right - left`
+- **Two pointers on unsorted data**: must sort first (or use a hash map instead)
+- **Kadane's with all negatives**: initialize `max_sum = nums[0]`, NOT `0` (empty subarray is not allowed)
+- **Prefix sum initialization**: `prefix[0] = 0` (empty prefix), actual values start at `prefix[1]`
+
+---
+
 ## Table of Contents
 1. [Fundamentals](#fundamentals)
 2. [Two Pointers](#two-pointers)

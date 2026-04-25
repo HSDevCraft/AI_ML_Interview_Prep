@@ -1,5 +1,64 @@
 # LLM Fundamentals - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Modern LLMs are decoder-only transformers trained via next-token prediction at massive scale. Understanding WHY each architectural choice was made (RoPE vs learned PE, SwiGLU vs GELU, GQA vs MHA) distinguishes senior candidates.
+
+### Modern LLM Architecture Changes vs Original Transformer
+
+| Component | Original (2017) | Modern LLMs (LLaMA 3, Mistral) | Why changed |
+|-----------|-----------------|-------------------------------|-------------|
+| Position encoding | Sinusoidal | RoPE | Better length extrapolation |
+| Normalization | Post-norm | Pre-norm + RMSNorm | More stable training |
+| Activation | ReLU | SwiGLU | Better performance |
+| Attention | MHA | GQA (Grouped Query) | Less KV cache memory |
+| Normalization type | LayerNorm | RMSNorm | Faster (no mean subtraction) |
+| Attention scope | Full | Sliding window (Mistral) | Scales to longer sequences |
+
+### Scaling Laws (Chinchilla) — Must Know
+
+```
+Optimal training: N_tokens ≈ 20 × N_parameters
+
+Pre-Chinchilla mistake: GPT-3 (175B params, 300B tokens) → undertrained
+Chinchilla insight: Llama 2 7B trained on 2T tokens is better than 175B on 300B tokens
+
+Why it matters:
+  - Smaller, well-trained models BEAT larger, undertrained models at inference time
+  - Affects hardware budget decisions: compute budget split between model size and data
+```
+
+### Key Inference Concepts
+
+```
+KV Cache:
+  - Store K,V matrices from previous tokens during generation
+  - Avoid recomputing attention for already-seen tokens
+  - Memory: 2 × n_layers × n_kv_heads × head_dim × seq_len × dtype_bytes
+  - For LLaMA 2 7B: ~2GB for 4096 context in fp16
+
+Speculative Decoding:
+  - Small draft model proposes γ tokens
+  - Large target model verifies all γ in PARALLEL
+  - Accepted tokens = same distribution as target alone
+  - Speedup: 2-4x with no quality loss
+
+Decoding Strategies:
+  Greedy:     always pick highest probability token → fast, deterministic, repetitive
+  Sampling:   sample from full distribution → diverse but can be incoherent
+  Top-k:      sample from top-k only → reduces low-probability words
+  Top-p (nucleus): sample from min set covering probability p → adaptive
+  Temperature: scale logits before softmax (higher=more random, lower=more focused)
+```
+
+### 🚨 Top Interview Pitfalls
+- Confusing **perplexity** with accuracy — perplexity = exp(cross-entropy loss), lower is better, not a direct quality measure
+- Not knowing that **context window ≠ memory** — attention IS O(n²) in memory; long contexts need Flash Attention
+- Saying "LLMs don't truly understand" without explaining emergent capabilities at scale
+- Forgetting that **temperature=0** is NOT the same as greedy decoding in all implementations
+
+---
+
 ## Table of Contents
 1. [Architecture Evolution](#architecture-evolution)
 2. [Decoder-Only Architectures](#decoder-only-architectures)

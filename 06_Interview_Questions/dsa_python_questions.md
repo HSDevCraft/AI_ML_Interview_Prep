@@ -1,5 +1,67 @@
 # DSA & Python Interview Questions Bank
 
+> **Coding Interview Strategy**: Talk through your approach BEFORE coding. State the brute force, identify the pattern, then optimize. Always clarify edge cases upfront.
+
+## DSA Problem-Solving Framework (use every time)
+
+```
+1. UNDERSTAND (2 min)
+   - Repeat problem in your own words
+   - Ask: sorted? duplicates allowed? empty input? integer overflow?
+   - Ask: optimize for time or space?
+
+2. EXAMPLES (1 min)
+   - Walk through given example
+   - Create your own: normal case, edge case (empty, single element, all same)
+
+3. BRUTE FORCE (1 min)
+   - State it verbally: "naive approach is O(n²) because..."
+   - Don't code it; use it to spot the inefficiency
+
+4. OPTIMIZE (3 min)
+   - Identify the pattern (see cheat sheet below)
+   - State time/space complexity before coding
+
+5. CODE (15-20 min)
+   - Write clean, readable code
+   - Talk through what you're doing
+   - Use meaningful variable names
+
+6. TEST (3 min)
+   - Trace through your example
+   - Check edge cases explicitly
+   - Look for off-by-one errors, empty inputs, single element
+```
+
+## Pattern Recognition Cheat Sheet
+
+| If the problem involves... | Use this pattern |
+|---------------------------|------------------|
+| Sorted array, find pair | Two Pointers |
+| Substring / subarray of length k | Sliding Window |
+| Shortest path in unweighted graph | BFS |
+| All paths, combinations, permutations | Backtracking / DFS |
+| Optimal substructure, overlapping subproblems | Dynamic Programming |
+| Repeated min/max queries | Heap / Priority Queue |
+| Prefix/suffix relationships | Prefix Sum |
+| Top-k elements | Heap or QuickSelect |
+| Balanced parentheses, evaluate expressions | Stack |
+| Trie for prefix matching | Trie |
+| Connected components, cycle detection | Union-Find |
+| Binary search on the answer (min/max feasibility) | Binary Search |
+
+## Complexity Quick Reference
+
+| Structure | Access | Search | Insert | Delete |
+|-----------|--------|--------|--------|--------|
+| Array | O(1) | O(n) | O(n) | O(n) |
+| Hash Map | O(1) | O(1) | O(1) | O(1) |
+| BST (balanced) | O(log n) | O(log n) | O(log n) | O(log n) |
+| Heap | O(1) top | O(n) | O(log n) | O(log n) |
+| Sorted Array | O(1) | O(log n) | O(n) | O(n) |
+
+---
+
 ## Table of Contents
 1. [Arrays & Strings](#arrays--strings)
 2. [Sliding Window](#sliding-window)
@@ -21,51 +83,85 @@
 ### Arrays & Strings
 
 **Q1: Two Sum**
+
+> **Pattern**: Hash map for O(1) complement lookup.
+
 ```python
-# Given array of integers, return indices of two numbers that add up to target
 # Time: O(n), Space: O(n)
 def two_sum(nums, target):
-    seen = {}
+    seen = {}  # value -> index
     for i, num in enumerate(nums):
         complement = target - num
-        if complement in seen:
+        if complement in seen:          # found the pair!
             return [seen[complement], i]
-        seen[num] = i
+        seen[num] = i                   # store for future lookups
     return []
+
+# Edge cases to mention:
+# - Empty array: returns []
+# - Same element twice: e.g., [3,3] target=6 → [0,1] (works because we check before storing)
+# - No solution: problem guarantees one, but return [] as fallback
 ```
+
+**🚨 Pitfall**: Using `nums.index(complement)` is O(n), making the whole thing O(n²). Hash map is key.
 
 **Q2: Best Time to Buy and Sell Stock**
+
+> **Pattern**: Track minimum seen so far; max profit = max(current - min_so_far).
+
 ```python
-# Find max profit from single buy and sell
 # Time: O(n), Space: O(1)
 def max_profit(prices):
+    if not prices:
+        return 0
     min_price = float('inf')
-    max_profit = 0
+    max_profit_val = 0
     for price in prices:
-        min_price = min(min_price, price)
-        max_profit = max(max_profit, price - min_price)
-    return max_profit
+        min_price = min(min_price, price)          # best day to buy (retrospectively)
+        max_profit_val = max(max_profit_val, price - min_price)  # profit if sell today
+    return max_profit_val
+
+# Intuition: at each price, ask "if I had bought at the lowest price so far, what's my profit?"
+# Edge cases: decreasing prices → return 0 (don't trade), single price → 0
 ```
 
+**🚨 Pitfall**: Off-by-one: you must BUY before SELL (can't sell on same day in basic version). The min tracking handles this correctly since we update min first, then check profit.
+
 **Q3: Longest Substring Without Repeating Characters**
+
+> **Pattern**: Sliding window with hash map tracking last seen index of each character.
+
 ```python
 # Time: O(n), Space: O(min(m,n)) where m is charset size
 def length_of_longest_substring(s):
-    char_index = {}
+    char_index = {}   # char -> last seen index
     max_len = start = 0
     
     for i, char in enumerate(s):
+        # If char was seen WITHIN current window, shrink window from left
         if char in char_index and char_index[char] >= start:
-            start = char_index[char] + 1
-        char_index[char] = i
+            start = char_index[char] + 1   # jump start past the duplicate
+        char_index[char] = i               # update last seen index
         max_len = max(max_len, i - start + 1)
     
     return max_len
+
+# Example trace: "abcba"
+# i=0 'a': start=0, window="a",   len=1
+# i=1 'b': start=0, window="ab",  len=2
+# i=2 'c': start=0, window="abc", len=3
+# i=3 'b': 'b' at index 1 >= start=0, so start=2, window="cb", len=2
+# i=4 'a': 'a' at index 0 < start=2, DON'T move start! window="cba", len=3
 ```
 
+**🚨 Pitfall**: The `char_index[char] >= start` check is critical! Without it, when a char was seen before the current window, you'd incorrectly shrink the window.
+
 **Q4: Trapping Rain Water**
+
+> **Pattern**: Two pointers. Water at position i = min(max_left, max_right) - height[i].
+
 ```python
-# Time: O(n), Space: O(1)
+# Time: O(n), Space: O(1)  [O(n) with prefix arrays is simpler to explain first]
 def trap(height):
     if not height:
         return 0
@@ -76,12 +172,14 @@ def trap(height):
     
     while left < right:
         if height[left] < height[right]:
+            # RIGHT side is taller → left side's water is bounded by left_max
             if height[left] >= left_max:
-                left_max = height[left]
+                left_max = height[left]    # new left boundary
             else:
-                water += left_max - height[left]
+                water += left_max - height[left]  # water trapped here
             left += 1
         else:
+            # LEFT side is taller → right side's water is bounded by right_max
             if height[right] >= right_max:
                 right_max = height[right]
             else:
@@ -89,7 +187,22 @@ def trap(height):
             right -= 1
     
     return water
+
+# Simpler O(n) space version (explain this first in interview, then optimize):
+def trap_simple(height):
+    n = len(height)
+    left_max  = [0]*n  # left_max[i] = max height from 0..i
+    right_max = [0]*n  # right_max[i] = max height from i..n-1
+    left_max[0] = height[0]
+    for i in range(1, n):
+        left_max[i] = max(left_max[i-1], height[i])
+    right_max[-1] = height[-1]
+    for i in range(n-2, -1, -1):
+        right_max[i] = max(right_max[i+1], height[i])
+    return sum(min(left_max[i], right_max[i]) - height[i] for i in range(n))
 ```
+
+**🚨 Interview Tip**: Start with `trap_simple` (O(n) space) to demonstrate understanding, then optimize to O(1) space with two pointers. Interviewers appreciate seeing both solutions.
 
 **Q5: Merge Intervals**
 ```python
@@ -332,26 +445,37 @@ def three_sum(nums):
 ### Linked Lists
 
 **Q6: Reverse Linked List**
+
+> **Pattern**: Three-pointer iteration (prev, curr, next). Draw it on paper first.
+
 ```python
-# Iterative: Time O(n), Space O(1)
+# Iterative: Time O(n), Space O(1)  ← prefer this in interviews
 def reverse_list(head):
     prev = None
-    while head:
-        next_node = head.next
-        head.next = prev
-        prev = head
-        head = next_node
-    return prev
+    curr = head
+    while curr:
+        next_node = curr.next  # save next BEFORE breaking the link
+        curr.next = prev       # reverse the pointer
+        prev = curr            # move prev forward
+        curr = next_node       # move curr forward
+    return prev  # prev is now the new head
 
-# Recursive: Time O(n), Space O(n)
+# Trace: 1 -> 2 -> 3 -> None
+# After iter 1: None <- 1  2 -> 3
+# After iter 2: None <- 1 <- 2  3
+# After iter 3: None <- 1 <- 2 <- 3  (prev=3, return 3)
+
+# Recursive: Time O(n), Space O(n) for call stack
 def reverse_list_recursive(head):
     if not head or not head.next:
-        return head
-    new_head = reverse_list_recursive(head.next)
-    head.next.next = head
-    head.next = None
+        return head  # base case: empty or single node
+    new_head = reverse_list_recursive(head.next)  # reverse rest
+    head.next.next = head   # make next node point back to current
+    head.next = None        # remove forward link (current becomes tail)
     return new_head
 ```
+
+**🚨 Pitfalls**: Forgetting to save `next_node` before overwriting `curr.next`. Returning `head` instead of `prev` (head is now the TAIL after reversal).
 
 **Q7: Merge K Sorted Lists**
 ```python
@@ -377,42 +501,116 @@ def merge_k_lists(lists):
 ```
 
 **Q8: LRU Cache**
+
+> **Pattern**: Hash map + Doubly Linked List for O(1) get/put. `OrderedDict` is the Pythonic shortcut.
+
 ```python
 from collections import OrderedDict
 
 class LRUCache:
-    def __init__(self, capacity):
+    """O(1) get and put using Python's OrderedDict (doubly linked list + hash map)."""
+    def __init__(self, capacity: int):
         self.capacity = capacity
-        self.cache = OrderedDict()
+        self.cache = OrderedDict()   # maintains insertion order
     
-    def get(self, key):
+    def get(self, key: int) -> int:
         if key not in self.cache:
             return -1
-        self.cache.move_to_end(key)
+        self.cache.move_to_end(key)  # mark as recently used
         return self.cache[key]
     
-    def put(self, key, value):
+    def put(self, key: int, value: int) -> None:
         if key in self.cache:
-            self.cache.move_to_end(key)
+            self.cache.move_to_end(key)   # update and mark recent
         self.cache[key] = value
         if len(self.cache) > self.capacity:
-            self.cache.popitem(last=False)
+            self.cache.popitem(last=False)  # evict LRU (oldest = leftmost)
+
+# If asked to implement WITHOUT OrderedDict (manual DLL + HashMap):
+class Node:
+    def __init__(self, key=0, val=0):
+        self.key, self.val = key, val
+        self.prev = self.next = None
+
+class LRUCacheManual:
+    def __init__(self, capacity):
+        self.cap = capacity
+        self.cache = {}           # key -> Node
+        # Sentinel nodes: left=LRU, right=MRU
+        self.left = Node()        # dummy LRU end
+        self.right = Node()       # dummy MRU end
+        self.left.next = self.right
+        self.right.prev = self.left
+    
+    def _remove(self, node):
+        node.prev.next, node.next.prev = node.next, node.prev
+    
+    def _insert_right(self, node):  # insert as MRU
+        node.prev = self.right.prev
+        node.next = self.right
+        self.right.prev.next = node
+        self.right.prev = node
+    
+    def get(self, key):
+        if key not in self.cache: return -1
+        self._remove(self.cache[key])
+        self._insert_right(self.cache[key])  # move to MRU
+        return self.cache[key].val
+    
+    def put(self, key, value):
+        if key in self.cache: self._remove(self.cache[key])
+        self.cache[key] = Node(key, value)
+        self._insert_right(self.cache[key])
+        if len(self.cache) > self.cap:
+            lru = self.left.next
+            self._remove(lru)
+            del self.cache[lru.key]
 ```
+
+**🚨 Interview Tip**: Mention OrderedDict first (shows Python knowledge), then offer to implement the manual DLL version if asked. The manual version shows data structure understanding.
 
 ---
 
 ### Trees
 
 **Q9: Validate Binary Search Tree**
+
+> **Pattern**: Pass valid range (min, max) through recursion. NOT just checking immediate children!
+
 ```python
 def is_valid_bst(root, min_val=float('-inf'), max_val=float('inf')):
+    """
+    Key insight: every node must satisfy ALL ancestor constraints,
+    not just be greater than left child and less than right child.
+    
+    Counter-example of naive approach:
+         5
+        / \
+       1   6
+          / \
+         3   7   <- 3 is left child of 6 (3 < 6 ✓) BUT 3 < 5 which violates BST!
+    """
     if not root:
         return True
-    if root.val <= min_val or root.val >= max_val:
+    if root.val <= min_val or root.val >= max_val:  # violates range from ancestors
         return False
-    return (is_valid_bst(root.left, min_val, root.val) and 
-            is_valid_bst(root.right, root.val, max_val))
+    return (is_valid_bst(root.left,  min_val, root.val) and   # left subtree: max=root.val
+            is_valid_bst(root.right, root.val, max_val))       # right subtree: min=root.val
+
+# Alternative: inorder traversal should be strictly increasing
+def is_valid_bst_inorder(root):
+    prev = float('-inf')
+    def inorder(node):
+        nonlocal prev
+        if not node: return True
+        if not inorder(node.left): return False
+        if node.val <= prev: return False   # not strictly increasing
+        prev = node.val
+        return inorder(node.right)
+    return inorder(root)
 ```
+
+**🚨 Classic Pitfall**: Only checking `left.val < root.val < right.val` is WRONG for subtrees. Always use the range propagation approach.
 
 **Q10: Serialize and Deserialize Binary Tree**
 ```python

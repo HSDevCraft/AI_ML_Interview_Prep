@@ -1,5 +1,53 @@
 # Mathematical Foundations for Machine Learning - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: ML math is linear algebra + calculus + probability. Interviewers test intuition ("what does the Hessian tell you?") more than derivation. Know the formulas AND what they mean geometrically.
+
+### Essential Formulas — Must Know by Heart
+
+```
+Linear Algebra:
+  Matrix multiply: (m×n) × (n×p) = (m×p)  [inner dims must match]
+  Eigendecomposition: A = VΛV^{-1}  [A symmetric: V is orthogonal, Λ is diagonal of eigenvalues]
+  SVD: A = UΣV^T  [U: left singular vecs, Σ: singular values, V: right singular vecs]
+  Trace: tr(A) = sum of diagonal = sum of eigenvalues
+  Determinant: det(A) = product of eigenvalues; det=0 ⇒ matrix is singular (not invertible)
+
+Calculus:
+  Chain rule: df/dx = df/dg · dg/dx  [foundation of backprop]
+  Gradient: ∇f = vector of partial derivatives → points in direction of steepest ascent
+  Jacobian: matrix of all first partial derivatives (for vector-valued functions)
+  Hessian: matrix of all second partial derivatives; PSD Hessian ⇒ convex function
+
+Probability:
+  Bayes: P(A|B) = P(B|A)P(A) / P(B)  [posterior ∝ likelihood × prior]
+  Expectation: E[X] = Σ x P(X=x)
+  Variance: Var[X] = E[X²] - (E[X])²
+  Normal: N(μ,σ²)   P(x) = exp(-(x-μ)²/2σ²) / sqrt(2πσ²)
+  MLE: θ* = argmax Σ log P(x_i | θ)  [maximize log-likelihood]
+  MAP: θ* = argmax Σ log P(x_i|θ) + log P(θ)  [add log-prior = regularization!]
+```
+
+### Geometric Intuitions — For Interview Explanations
+
+| Concept | Geometric meaning |
+|---------|------------------|
+| Eigenvectors | Directions the matrix scales (doesn't rotate) |
+| Gradient | Arrow pointing uphill, perpendicular to level sets |
+| Hessian eigenvalues | Curvature in each direction; all positive = bowl (convex) |
+| Covariance matrix | Shape and orientation of data cloud |
+| L2 norm of weights | Length of weight vector in parameter space |
+| Dot product = 0 | Orthogonal (perpendicular) vectors |
+
+### 🚨 Top Interview Pitfalls
+- Confusing **MLE** (maximize likelihood) with **MAP** (likelihood + prior) — L2 regularization IS a Gaussian prior; L1 IS a Laplace prior
+- Not knowing that **PCA = SVD** on centered data — top-k singular vectors are the principal components
+- Saying "gradient points toward minimum" — it points AWAY from minimum (toward steepest ascent); we go NEGATIVE gradient for descent
+- Not knowing that **covariance matrix PSD** means Var[a^T X] ≥ 0 for any vector a (all variances are non-negative)
+
+---
+
 ## Table of Contents
 1. [Linear Algebra](#linear-algebra)
 2. [Calculus](#calculus)

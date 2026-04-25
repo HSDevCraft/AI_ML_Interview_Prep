@@ -1,5 +1,90 @@
 # LLM Agents & Tools - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: An agent is an LLM with a reasoning loop + tools + memory. The hard parts are reliability, error handling, and knowing when to stop.
+
+### Agent Architecture Comparison
+
+| Architecture | How it works | Best for | Failure mode |
+|--------------|-------------|----------|---------------|
+| ReAct | Reason + Act interleaved | Tool use, research | Long loops, hallucinated tool calls |
+| Plan & Execute | Plan first, then execute | Complex multi-step tasks | Plan becomes invalid mid-execution |
+| Reflexion | Act, reflect, revise | Tasks needing self-correction | May loop without convergence |
+| Multi-agent | Specialized agents collaborate | Complex parallel tasks | Communication overhead, conflicting actions |
+| LangGraph | Stateful graph execution | Structured workflows | Over-engineering simple tasks |
+
+### 🚨 Top Interview Pitfalls
+- Not addressing **loop detection** — agents can get stuck in infinite loops without safeguards
+- Missing **error handling** for tool failures — agent must degrade gracefully, not crash
+- No **token budget** management — scratchpad grows unboundedly, must compress or truncate
+- Forgetting **observability** — agent traces are essential for debugging production issues
+- "My agent is too slow" → check: are tools running sequentially when they could be parallel?
+
+### Key Production Considerations
+
+```python
+# Production-ready agent safeguards
+class ProductionAgent:
+    def __init__(self, llm, tools, max_iterations=15, timeout_sec=60):
+        self.llm = llm
+        self.tools = {t.name: t for t in tools}
+        self.max_iterations = max_iterations
+        self.timeout = timeout_sec
+    
+    def run(self, task: str) -> str:
+        messages = []
+        seen_actions = set()   # loop detection
+        token_count = 0
+        
+        import time
+        start_time = time.time()
+        
+        for iteration in range(self.max_iterations):
+            # Safety: timeout check
+            if time.time() - start_time > self.timeout:
+                return "[TIMEOUT] Agent exceeded time limit."
+            
+            # Safety: context compression when getting large
+            if token_count > 3000:
+                messages = self._compress_scratchpad(messages)
+            
+            response = self.llm.generate(messages)
+            
+            # Parse tool call
+            tool_call = self._parse_tool_call(response)
+            if not tool_call:
+                return self._extract_final_answer(response)
+            
+            # Safety: loop detection
+            action_key = f"{tool_call['name']}:{tool_call['args']}"
+            if action_key in seen_actions:
+                messages.append({"role": "user",
+                    "content": "You already tried this action. Try a different approach."})
+                continue
+            seen_actions.add(action_key)
+            
+            # Execute with error handling
+            try:
+                result = self.tools[tool_call['name']].run(tool_call['args'])
+            except Exception as e:
+                result = f"Tool error: {str(e)}. Try a different approach."
+            
+            messages.append({"role": "tool", "content": result})
+            token_count += len(result.split())
+        
+        return "[MAX ITERATIONS] Could not complete task."
+    
+    def _compress_scratchpad(self, messages):
+        """Keep first (system + user) and last N messages, summarize middle."""
+        if len(messages) <= 4:
+            return messages
+        summary = f"[Summarized {len(messages)-4} prior steps]"
+        return messages[:2] + [{"role": "system", "content": summary}] + messages[-2:]
+```
+
+---
+
 ## Table of Contents
 1. [Agent Fundamentals](#agent-fundamentals)
 2. [Tool Use and Function Calling](#tool-use-and-function-calling)

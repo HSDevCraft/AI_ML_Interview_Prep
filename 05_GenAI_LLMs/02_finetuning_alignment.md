@@ -1,5 +1,48 @@
 # Fine-tuning & Alignment - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **When asked about fine-tuning**: Always start with the decision framework, not the method. Ask: what do you want to change (knowledge vs behavior), how much compute/data do you have, and what's the latency budget?
+
+### Fine-tuning Decision Tree
+
+```
+Do you want to change MODEL BEHAVIOR (style, format, safety)?
+  YES → RLHF / DPO (preference learning)
+  NO  → Continue...
+
+Do you want to inject DOMAIN KNOWLEDGE?
+  YES + knowledge is static → Full fine-tune or LoRA
+  YES + knowledge changes   → RAG is better!
+  NO  → Continue...
+
+Do you have LARGE COMPUTE?
+  YES + large dataset → Full fine-tuning
+  NO  → LoRA (r=8-64) or QLoRA (consumer GPU)
+
+Do you need MULTI-TASK switching?
+  YES → LoRA adapters per task, swap at inference
+  NO  → Merge LoRA into base model
+```
+
+### Method Comparison at a Glance
+
+| Method | Trainable % | GPU Memory | Performance | Best For |
+|--------|-------------|------------|-------------|----------|
+| Full FT | 100% | Very High | Best | Large compute, domain shift |
+| LoRA | 0.1-1% | Low | Near full | Most use cases |
+| QLoRA | 0.1-1% | Very Low | Good | Consumer GPU (7B+ models) |
+| Prefix-tuning | 0.1% | Low | Good | Soft prompts, generation |
+| Adapter | 1-5% | Medium | Good | Modular, multi-task |
+
+### 🚨 Top Interview Pitfalls
+- Saying "fine-tune" when RAG would be better (don't inject rapidly-changing facts into weights)
+- Not addressing **catastrophic forgetting** (full FT can erase general knowledge)
+- Confusing **instruction tuning** (behavior change) with **domain adaptation** (knowledge)
+- Forgetting that LoRA must be **merged before deployment** for zero inference overhead
+
+---
+
 ## Table of Contents
 1. [Fine-tuning Methods Overview](#fine-tuning-methods-overview)
 2. [Parameter-Efficient Fine-tuning (PEFT)](#parameter-efficient-fine-tuning)

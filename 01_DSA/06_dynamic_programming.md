@@ -1,5 +1,89 @@
 # Dynamic Programming - Complete In-Depth Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: DP = recursion + memoization. Identify overlapping subproblems + optimal substructure, then decide: top-down (memoization) or bottom-up (tabulation).
+
+### How to Identify a DP Problem
+
+```
+Signals this IS DP:
+  ✓ "Find minimum/maximum"
+  ✓ "Count the number of ways"
+  ✓ "Is it possible to...?"
+  ✓ Problem breaks into smaller identical subproblems
+  ✓ Choices at each step affect future choices
+
+NOT DP (greedy works):
+  - Locally optimal → globally optimal
+  - Activity selection, Huffman coding, MST
+```
+
+### DP Pattern Catalog
+
+```
+1D DP:      dp[i] depends on dp[i-1], dp[i-2]
+  Examples: Fibonacci, climbing stairs, house robber, coin change
+
+2D DP:      dp[i][j] depends on dp[i-1][j], dp[i][j-1], dp[i-1][j-1]
+  Examples: Grid paths, edit distance, LCS
+
+Knapsack:   dp[i][w] = max value using first i items with weight limit w
+  Variants: 0/1 knapsack, unbounded, subset sum, partition equal subset
+
+String DP:  dp[i][j] = answer for s1[:i] and s2[:j]
+  Examples: LCS, edit distance, wildcard matching
+
+State Machine: multiple states per position
+  Examples: Stock buy/sell with cooldown, regex matching
+
+Interval DP: dp[i][j] = answer for subproblem from index i to j
+  Examples: Matrix chain, burst balloons, palindrome partitioning
+```
+
+### Top-Down vs Bottom-Up — Trade-offs
+
+```python
+# TOP-DOWN (memoization) — write recursion first, add cache
+from functools import lru_cache
+
+@lru_cache(maxsize=None)   # Python auto-memoization!
+def coin_change(amount, coins):
+    if amount == 0: return 0
+    if amount < 0:  return float('inf')
+    return 1 + min(coin_change(amount - c, coins) for c in coins)
+
+# BOTTOM-UP (tabulation) — no recursion overhead, often O(1) space
+def coin_change_bu(amount, coins):
+    dp = [float('inf')] * (amount + 1)
+    dp[0] = 0                         # base case: 0 coins for amount 0
+    for a in range(1, amount + 1):
+        for c in coins:
+            if c <= a:
+                dp[a] = min(dp[a], dp[a - c] + 1)
+    return dp[amount] if dp[amount] != float('inf') else -1
+```
+
+### Classic Problems and Their DP Transitions
+
+```
+Coin Change (min coins):    dp[i] = min(dp[i-coin]+1 for coin in coins)
+LCS:                        if match: dp[i][j] = dp[i-1][j-1]+1
+                            else:     dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+Edit Distance:              dp[i][j] = min(insert, delete, replace) → 3-way min
+0/1 Knapsack:               dp[i][w] = max(dp[i-1][w], dp[i-1][w-wt]+val)
+LIS:                        dp[i] = max(dp[j]+1 for j<i if nums[j]<nums[i])
+```
+
+### 🚨 Top Interview Pitfalls
+- Starting with tabulation before understanding the recursive structure — always sketch the recursion first
+- Off-by-one in dp array sizing: if `dp[i]` represents "first i elements", size must be `n+1`
+- Forgetting base cases — always initialize `dp[0]` (and `dp[i][0]`, `dp[0][j]` for 2D) before the loop
+- For LCS/Edit Distance: `dp[i][0] = i` and `dp[0][j] = j` (cost to convert to empty string)
+- Not checking if `c <= a` in coin change → index out of bounds
+
+---
+
 ## Table of Contents
 1. [Fundamentals](#fundamentals)
 2. [1D DP Patterns](#1d-dp-patterns)

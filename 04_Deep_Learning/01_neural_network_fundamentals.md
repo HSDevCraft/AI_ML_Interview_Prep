@@ -1,5 +1,60 @@
 # Neural Network Fundamentals - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Neural networks are universal function approximators trained via gradient descent + backprop. The engineering challenge is making gradient flow stable (initialization, normalization, architecture choices).
+
+### Activation Functions — When to Use Each
+
+| Function | Formula | Range | Use When | Issue |
+|----------|---------|-------|----------|-------|
+| Sigmoid | 1/(1+e^-x) | (0,1) | Binary output layer | Vanishing gradient |
+| Tanh | (e^x-e^-x)/(e^x+e^-x) | (-1,1) | Hidden layers (old) | Vanishing gradient |
+| ReLU | max(0,x) | [0,∞) | Default hidden layers | Dying ReLU (x<0 always 0) |
+| Leaky ReLU | max(0.01x, x) | (-∞,∞) | When dying ReLU is a problem | α is a hyperparameter |
+| GELU | x·Φ(x) | (-∞,∞) | Transformers (BERT, GPT) | Slower to compute |
+| SwiGLU | Swish(xW₁)⊙xW₂ | (-∞,∞) | LLaMA, PaLM FFN | Two linear projections |
+| Softmax | e^xi/Σe^xj | (0,1) | Multi-class output | Numerically unstable without log-sum-exp |
+
+### Optimizer Comparison
+
+| Optimizer | Update Rule | Best For | Issue |
+|-----------|-------------|----------|-------|
+| SGD | w -= lr·g | Convex problems, CNNs | Sensitive to lr, slow |
+| SGD+Momentum | v = βv + g; w -= lr·v | Most tasks with fine tuning | Still needs lr tuning |
+| AdaGrad | Accumulates g², smaller lr for frequent params | Sparse features (NLP) | lr decreases to 0 |
+| RMSprop | Exponential decay of g² | RNNs, non-stationary | No bias correction |
+| Adam | Momentum + RMSprop + bias correction | Default choice | Needs warmup for Transformers |
+| AdamW | Adam + decoupled weight decay | Transformers | - |
+
+### Weight Initialization Rules
+
+```python
+import torch.nn as nn
+
+# Xavier (Glorot): for sigmoid/tanh activations
+# Var(W) = 2 / (fan_in + fan_out)
+nn.init.xavier_uniform_(layer.weight)   # uniform variant
+nn.init.xavier_normal_(layer.weight)    # normal variant
+
+# He (Kaiming): for ReLU/Leaky ReLU
+# Var(W) = 2 / fan_in  (accounts for ReLU zeroing half the distribution)
+nn.init.kaiming_uniform_(layer.weight, nonlinearity='relu')
+
+# Why initialization matters:
+# Too small: activations shrink to 0, gradients vanish
+# Too large: activations explode, gradients explode
+# Good init: keeps variance stable through forward AND backward pass
+```
+
+### 🚨 Top Interview Pitfalls
+- Saying ReLU "never has vanishing gradient" — it does for negative inputs (Dying ReLU)
+- Not knowing that **Adam doesn't need learning rate warmup for small models** but Transformers DO (due to early training instability)
+- Forgetting that **SGD often generalizes better than Adam** for image models (despite slower convergence)
+- Confusing **weight decay** (L2 in loss) with **AdamW's decoupled weight decay** — they produce different results
+
+---
+
 ## Table of Contents
 1. [Perceptron and MLP](#perceptron-and-mlp)
 2. [Activation Functions](#activation-functions)

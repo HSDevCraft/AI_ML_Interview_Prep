@@ -1,4 +1,24 @@
-# ML/DL/GenAI Interview Questions Bank
+# ML / DL / GenAI Interview Questions Bank
+
+> **How to use**: Practice the **one-liner answer first** (recall), then build depth. Always link theory to a real project. Mention pitfalls proactively — interviewers reward self-awareness.
+
+## Interview Strategy
+
+| Round | Focus | Key Signal |
+|-------|-------|------------|
+| ML Theory | Bias-variance, regularization, metrics | Can you derive formulas and explain trade-offs? |
+| DL Theory | Backprop, attention, normalization | Can you explain WHY, not just WHAT? |
+| GenAI/LLM | Transformers, fine-tuning, RAG, agents | Can you discuss production trade-offs? |
+| System Design | End-to-end ML system | Trade-offs, scale, failure modes |
+
+### PEDAL Framework for Technical Answers
+1. **P**roblem — define it precisely
+2. **E**quation — write the math
+3. **D**iagram — sketch or describe architecture
+4. **A**nalogy — build intuition
+5. **L**imitation — what breaks it, trade-offs
+
+---
 
 ## Table of Contents
 1. [Machine Learning Questions](#machine-learning-questions)
@@ -13,103 +33,237 @@
 ## Machine Learning Questions
 
 ### Q1: Explain Bias-Variance Tradeoff
+
+> **⚡ One-liner**: Bias = error from wrong assumptions (underfitting); Variance = error from sensitivity to training data (overfitting). Total Error = Bias² + Variance + Irreducible Noise.
+
+**💡 Intuition**: A straight line (high bias) always misses a curved truth. A degree-100 polynomial (high variance) memorizes every noise point. The goal is the sweet spot.
+
 ```
-Bias: Error from erroneous assumptions (underfitting)
-- High bias = model too simple
-- Misses relevant relations
-
-Variance: Error from sensitivity to small fluctuations (overfitting)
-- High variance = model too complex
-- Captures noise as if it were signal
-
 Total Error = Bias² + Variance + Irreducible Error
 
-Solutions:
-- High Bias: More complex model, more features, less regularization
-- High Variance: More data, simpler model, regularization, dropout, ensemble
+                Train Error    Test Error    Fix
+Underfitting       High           High     → Add complexity, more features
+Overfitting        Low            High     → Regularize, more data, ensemble
+Good Fit           Low            ~Low     ✓
 ```
+
+```python
+import numpy as np
+
+# Visualize tradeoff: how complexity affects bias vs variance
+X = np.linspace(0, 1, 100)
+y_true  = np.sin(2 * np.pi * X)
+y_noisy = y_true + np.random.normal(0, 0.3, len(X))
+
+for deg in [1, 4, 15]:  # underfit, good fit, overfit
+    coeffs  = np.polyfit(X, y_noisy, deg)
+    y_pred  = np.polyval(coeffs, X)
+    train_e = np.mean((y_noisy - y_pred) ** 2)
+    test_e  = np.mean((y_true  - y_pred) ** 2)  # vs true signal
+    print(f"deg={deg:2d}  train={train_e:.3f}  test={test_e:.3f}")
+# deg= 1  train=0.180  test=0.500  ← underfitting (high bias)
+# deg= 4  train=0.090  test=0.100  ← good fit
+# deg=15  train=0.001  test=0.800  ← overfitting (high variance)
+```
+
+**🚨 Common Pitfalls**:
+- Forgetting **irreducible error** (noise no model can remove)
+- More data reduces variance but **NOT bias**
+- Early stopping reduces variance; increasing model depth reduces bias
+
+**💬 Follow-ups**: "How does ensemble learning reduce variance?" → Averaging multiple models cancels individual noise. "Can a model have both high bias and high variance?" → Yes: misspecified model on small dataset.
 
 ### Q2: What is regularization? Compare L1 vs L2
+
+> **⚡ One-liner**: Regularization adds a penalty on weight magnitude to prevent overfitting. L1 (Lasso) zeroes out unimportant weights (feature selection); L2 (Ridge) shrinks all weights toward zero evenly.
+
+**💡 Intuition for sparsity**: L1 ball has sharp corners on axes → gradient descent hits corners where some w=0. L2 ball is smooth → gradient descent stops before hitting an axis.
+
 ```
-Regularization adds penalty to loss function to prevent overfitting.
+L1 (Lasso):    Loss + λ Σ|w|       → sparse weights, some exactly 0
+L2 (Ridge):    Loss + λ Σw²        → all small, non-zero weights
+Elastic Net:   Loss + λ₁ Σ|w| + λ₂ Σw²  → best of both
 
-L1 (Lasso): Loss + λ Σ|w|
-- Produces sparse weights (feature selection)
-- Some weights become exactly 0
-- Good when few features are important
-
-L2 (Ridge): Loss + λ Σw²
-- Produces small but non-zero weights
-- Distributes weight among correlated features
-- Better for preventing overfitting in general
-
-Elastic Net: Combines both
-Loss + λ₁ Σ|w| + λ₂ Σw²
+Gradient comparison:
+  L1: sign(w) × λ      — constant push (same force regardless of weight size)
+  L2: 2λw              — proportional push (large weights get pushed more)
+  Why L2 never reaches 0: gradient at w=0 is 2λ×0=0, no force to cross zero
 ```
+
+```python
+import numpy as np
+from sklearn.linear_model import Ridge, Lasso
+
+X = np.random.randn(100, 10)  # 10 features, many irrelevant
+y = X[:, 0] * 3 + X[:, 1] * 2 + np.random.randn(100) * 0.5  # only 2 matter
+
+ridge = Ridge(alpha=1.0).fit(X, y)
+lasso = Lasso(alpha=0.1).fit(X, y)
+
+print("Ridge:", np.round(ridge.coef_, 2))
+# → [2.9, 1.9, 0.1, -0.1, 0.2, ...]  all non-zero (shrunk)
+print("Lasso:", np.round(lasso.coef_, 2))
+# → [2.9, 1.9, 0.0,  0.0, 0.0, ...]  sparse (irrelevant → exactly 0)
+```
+
+**🚨 Common Pitfalls**:
+- Forgetting to **standardize features** before regularization (otherwise penalty is unfair across scales)
+- Confusing λ direction: larger λ = MORE regularization = simpler model
+- L1 doesn't always zero out features — depends on λ strength
+
+**💬 Follow-up**: "Why doesn't L2 give exact zeros?" → Gradient at zero is `2λ·0=0`, so no force pushes through zero.
 
 ### Q3: Explain precision, recall, F1-score. When to use each?
+
+> **⚡ One-liner**: Precision = "of what I flagged positive, how many were?" Recall = "of all actual positives, how many did I catch?" F1 is their harmonic mean — use it when FP and FN costs both matter.
+
+**💡 Net analogy**: Wide net = high recall (catch everything) but low precision (lots of bycatch). Narrow net = high precision but low recall.
+
 ```
-Precision = TP / (TP + FP)
-- "Of predicted positives, how many are correct?"
-- Important when false positives are costly (spam detection)
+Confusion Matrix:
+                 Predicted +     Predicted -
+Actual +      TP (caught)      FN (missed)
+Actual -      FP (false alarm)  TN (correct reject)
 
-Recall = TP / (TP + FN)
-- "Of actual positives, how many did we find?"
-- Important when false negatives are costly (disease detection)
-
-F1 = 2 × (Precision × Recall) / (Precision + Recall)
-- Harmonic mean, balances both
-- Good for imbalanced datasets
-
-Use Cases:
-- Spam: High precision (don't want to lose important emails)
-- Cancer: High recall (don't want to miss cases)
-- Balanced importance: F1 score
+Precision = TP / (TP + FP)  → minimize FP  (spam filter: don't block real mail)
+Recall    = TP / (TP + FN)  → minimize FN  (cancer: don't miss cases)
+F1        = 2·P·R / (P+R)   → harmonic mean, punishes extreme imbalance
+PR-AUC    → use for highly imbalanced data (<5% positive class)
+ROC-AUC   → comparing classifiers across all thresholds
 ```
+
+```python
+from sklearn.metrics import precision_score, recall_score, f1_score, precision_recall_curve
+import numpy as np
+
+y_true   = [1, 1, 1, 0, 0, 0, 1, 0]
+y_pred   = [1, 1, 0, 0, 1, 0, 1, 1]  # TP=3, FP=2, FN=1
+
+print(f"Precision: {precision_score(y_true, y_pred):.2f}")  # 3/(3+2) = 0.60
+print(f"Recall:    {recall_score(y_true, y_pred):.2f}")     # 3/(3+1) = 0.75
+print(f"F1:        {f1_score(y_true, y_pred):.2f}")         # 0.667
+
+# Threshold tuning: trade precision for recall
+y_scores = np.array([0.9, 0.8, 0.4, 0.1, 0.7, 0.2, 0.85, 0.6])
+precisions, recalls, thresholds = precision_recall_curve(y_true, y_scores)
+# Lower threshold → higher recall, lower precision (catch more, more false alarms)
+```
+
+**🚨 Common Pitfalls**:
+- Using **accuracy on imbalanced data** — 99% accuracy predicting all-negative on 1% fraud data
+- Not specifying macro/micro/weighted for multi-class F1
+- Precision and recall are threshold-dependent — always report at your deployment threshold
+
+**💬 Follow-up**: "Macro vs micro F1?" → Macro = average per-class F1; Micro = aggregate TP/FP/FN (better for class imbalance).
 
 ### Q4: How does Random Forest work? Why is it effective?
-```
-Random Forest:
-1. Create multiple decision trees (ensemble)
-2. Each tree trained on bootstrap sample (bagging)
-3. At each split, consider random subset of features
-4. Final prediction: majority vote (classification) or average (regression)
 
-Why effective:
-- Reduces variance through averaging
-- Decorrelates trees via feature randomization
-- Robust to outliers and noise
-- Handles high-dimensional data well
-- Provides feature importance
+> **⚡ One-liner**: Random Forest trains many decorrelated trees on bootstrap samples with random feature subsets, then averages predictions — reducing variance while keeping bias low.
+
+**💡 Intuition**: 100 diverse experts who each see different parts of the data will collectively be more reliable than one expert who sees everything — especially if they're not all making the same mistakes (decorrelation).
+
+```
+Algorithm:
+  For each of B trees:
+    1. Sample n rows WITH replacement (bootstrap) → ~63% unique samples
+    2. At each split, consider only sqrt(p) random features
+    3. Grow tree fully (high variance but low bias individually)
+  Predict: majority vote (classification) or average (regression)
+
+Why random features matter:
+  Without them: all trees see same strong features → highly correlated
+  With them:    trees disagree on different subspaces → variance cancels on averaging
+
+OOB (Out-of-Bag) Score:
+  ~37% of samples unused per tree → free validation without separate test set
 
 Key hyperparameters:
-- n_estimators: Number of trees
-- max_depth: Tree depth limit
-- max_features: Features per split (sqrt for classification, n/3 for regression)
-- min_samples_split: Minimum samples to split node
+  n_estimators:     More trees = better (diminishing returns after ~200)
+  max_features:     sqrt(p) for classification, p/3 for regression
+  max_depth:        None = grow fully (low bias), limit for regularization
+  min_samples_leaf: Higher = more regularization, smoother boundaries
 ```
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.inspection import permutation_importance
+import numpy as np
+
+rf = RandomForestClassifier(
+    n_estimators=200,
+    max_features='sqrt',    # only sqrt(p) features per split
+    oob_score=True,         # free validation estimate
+    n_jobs=-1,              # parallel training
+    random_state=42
+).fit(X_train, y_train)
+
+print(f"OOB Score (free validation): {rf.oob_score_:.3f}")
+
+# PITFALL: impurity-based importance is biased toward high-cardinality features
+# Use permutation importance for unbiased estimates:
+perm = permutation_importance(rf, X_val, y_val, n_repeats=10)
+for i in np.argsort(perm.importances_mean)[::-1][:5]:
+    print(f"Feature {i}: {perm.importances_mean[i]:.4f} ± {perm.importances_std[i]:.4f}")
+```
+
+**🚨 Common Pitfalls**:
+- `feature_importances_` is **biased toward high-cardinality features** → use `permutation_importance`
+- Forgetting `oob_score=True` — it's a free sanity check during training
+- Very high `n_estimators` with no parallelism (`n_jobs=-1`) is slow with no benefit
+
+**💬 Follow-ups**: "Bagging vs boosting?" → Bagging = parallel on bootstrap samples (reduces variance); boosting = sequential on residuals (reduces bias). "When does RF fail?" → Linear relationships, very sparse high-dim data.
 
 ### Q5: Explain gradient boosting. How does XGBoost improve on it?
-```
-Gradient Boosting:
-1. Start with simple model (e.g., mean)
-2. Compute residuals (errors)
-3. Fit new model to predict residuals
-4. Add new model to ensemble (with learning rate)
-5. Repeat
 
-XGBoost improvements:
-- Regularization: L1 and L2 on leaf weights
-- Second-order gradient: Uses Hessian for better approximation
-- Column subsampling: Like Random Forest
-- Efficient handling of sparse data
-- Parallel processing at tree level
-- Built-in cross-validation
-- Early stopping
+> **⚡ One-liner**: Gradient boosting sequentially adds weak trees, each fitting the residuals of the previous ensemble. XGBoost improves it with L1/L2 regularization, second-order gradients, parallel split finding, and sparse data handling.
 
-Loss: Σ l(yᵢ, ŷᵢ) + Σ Ω(fₖ)
-where Ω(f) = γT + ½λ||w||²
+**💡 Intuition**: Think of correcting mistakes iteratively. If your first model predicts 70 when truth is 100, the next model learns to predict the error (30). You accumulate these corrections until the ensemble is accurate.
+
 ```
+Gradient Boosting Algorithm:
+  F_0(x) = mean(y)                   ← start with constant
+  For t = 1 to T:
+    r_t = y - F_{t-1}(x)             ← compute residuals (pseudo-residuals)
+    h_t = fit tree to r_t             ← learn to predict errors
+    F_t = F_{t-1} + η·h_t            ← add with learning rate η (shrinkage)
+
+  More general: fit h_t to -∂L/∂F_{t-1}  (gradient of loss in function space)
+
+XGBoost Key Improvements:
+  1. Regularization: Ω(f) = γT + ½λ||w||²  (penalize # leaves T and leaf weights w)
+  2. Second-order Taylor expansion: uses Hessian H for better approximation of loss
+     Optimal leaf weight: w*_j = -G_j / (H_j + λ)  where G=sum grad, H=sum hessian
+  3. Column (feature) subsampling: decorrelates trees (like RF)
+  4. Sparse-aware split finding: efficient handling of missing values
+  5. Block structure: cache-optimized for parallel computation
+  6. Early stopping with eval_metric monitoring
+```
+
+```python
+import xgboost as xgb
+
+# XGBoost with all key parameters explained
+model = xgb.XGBClassifier(
+    n_estimators=500,       # max trees (use early stopping in practice)
+    learning_rate=0.05,     # η: smaller = more trees needed, better generalization
+    max_depth=6,            # tree depth (3-8 typical; deeper = more variance)
+    subsample=0.8,          # row subsampling per tree (reduces overfitting)
+    colsample_bytree=0.8,   # feature subsampling per tree (like RF)
+    reg_alpha=0.1,          # L1 on leaf weights
+    reg_lambda=1.0,         # L2 on leaf weights
+    eval_metric='logloss',
+    early_stopping_rounds=20,   # stop if no improvement for 20 rounds
+)
+model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
+print(f"Best iteration: {model.best_iteration}")
+```
+
+**🚨 Common Pitfalls**:
+- Not using **early stopping** → trees keep adding, overfitting
+- Too high `learning_rate` (>0.1) → model doesn't generalize well; lower lr + more trees is usually better
+- Ignoring `scale_pos_weight` for imbalanced data: `scale_pos_weight = negative_count / positive_count`
+
+**💬 Follow-ups**: "XGBoost vs LightGBM?" → LightGBM uses leaf-wise tree growth and histogram binning for speed; XGBoost uses level-wise growth. LightGBM is faster for large datasets. "XGBoost vs CatBoost?" → CatBoost handles categorical features natively with target encoding.
 
 ### Q6: What is cross-validation? Why use it?
 ```
@@ -135,27 +289,51 @@ Variations:
 ```
 
 ### Q7: How do you handle imbalanced datasets?
+
+> **⚡ One-liner**: Try class weights first (free, often sufficient), then threshold tuning, then SMOTE if needed — and always evaluate with F1/PR-AUC, never plain accuracy.
+
+**💡 Intuition**: If 99% of transactions are legit, predicting "legit" always gets 99% accuracy but catches 0 fraud. The goal is shifting the model's attention to the minority class without losing too much overall performance.
+
 ```
-Data-level:
-- Oversampling minority (SMOTE, ADASYN)
-- Undersampling majority
-- Combination (SMOTETomek)
-
-Algorithm-level:
-- Class weights (class_weight='balanced')
-- Cost-sensitive learning
-- Anomaly detection approach
-
-Evaluation:
-- Don't use accuracy alone
-- Use precision, recall, F1, AUC-ROC
-- PR-AUC for highly imbalanced data
-
-Model selection:
-- Ensemble methods often work better
-- Adjust decision threshold
-- Focal loss for neural networks
+Strategy Ladder (try in order):
+  1. Fix the metric first → swap accuracy for F1, PR-AUC, or cost-weighted metric
+  2. Class weights → class_weight='balanced' (free, try this first!)
+  3. Threshold tuning → move 0.5 threshold to better precision/recall balance
+  4. Resampling (if above insufficient):
+     - SMOTE: interpolates synthetic minority samples (k-NN based)
+     - RandomUnderSampler: faster, but loses information
+     - SMOTETomek: SMOTE + clean decision boundary
+  5. Algorithm-level:
+     - Focal loss for neural nets: FL(pt) = -α(1-pt)^γ log(pt)
+     - Isolation Forest / One-class SVM for extreme imbalance
 ```
+
+```python
+from sklearn.linear_model import LogisticRegression
+from imblearn.over_sampling import SMOTE
+from sklearn.metrics import classification_report
+
+# Step 1: Class weights (simplest, try first)
+model = LogisticRegression(class_weight='balanced')  # auto-weights minority higher
+model.fit(X_train, y_train)
+
+# Step 2: Threshold tuning (often better than resampling)
+probs = model.predict_proba(X_test)[:, 1]
+preds = (probs >= 0.3).astype(int)  # lower threshold → higher recall, lower precision
+print(classification_report(y_test, preds))
+
+# Step 3: SMOTE if still needed
+smote = SMOTE(sampling_strategy=0.5, random_state=42)
+# ⚠️ CRITICAL: apply SMOTE ONLY on TRAINING data, never on test!
+X_res, y_res = smote.fit_resample(X_train, y_train)
+```
+
+**🚨 Common Pitfalls**:
+- Applying SMOTE **before** train/test split → **data leakage**, inflated metrics
+- Using ROC-AUC on 99:1 imbalance — a bad model can look great; PR-AUC is more informative
+- SMOTE creates synthetic samples **in feature space**, not the actual data manifold → can add noise
+
+**💬 Follow-ups**: "What is SMOTE?" → Interpolates between existing minority samples and their k-nearest neighbors. "Focal loss?" → Down-weights easy (confident) examples so model focuses on hard misclassifications.
 
 ### Q8: Explain PCA. What are its limitations?
 ```
@@ -185,28 +363,54 @@ When to use:
 ```
 
 ### Q9: How does SVM work? Explain kernel trick.
-```
-SVM (Support Vector Machine):
-- Find hyperplane that maximizes margin between classes
-- Support vectors: points closest to decision boundary
 
-For non-linearly separable data:
-- Map to higher dimensional space
-- Find linear separator in that space
+> **⚡ One-liner**: SVM finds the hyperplane that maximizes the margin between classes. The kernel trick allows SVM to find non-linear boundaries by implicitly mapping data to higher dimensions without computing the mapping explicitly.
+
+**💡 Intuition**: Imagine separating red and blue points on a table. If they're entangled, lifting the table (mapping to 3D) might make them linearly separable. The kernel trick computes the distances IN the lifted space without actually doing the lift.
+
+```
+Objective: maximize margin 2/||w||  subject to y_i(w·x_i + b) ≥ 1
+
+Support vectors: points on or closest to the margin — ONLY these define the boundary
+  → If you remove non-support-vector points, the solution doesn't change!
+
+Soft margin (C parameter):
+  Low C  → wide margin, more misclassifications OK  (high regularization)
+  High C → narrow margin, enforce correct classification (low regularization)
 
 Kernel Trick:
-- Compute dot products in high-dim space without explicit mapping
-- K(x, y) = φ(x) · φ(y)
+  K(x, x') = φ(x)·φ(x')  computed WITHOUT computing φ(x) explicitly
 
-Common kernels:
-- Linear: K(x,y) = x·y
-- Polynomial: K(x,y) = (γx·y + r)^d
-- RBF: K(x,y) = exp(-γ||x-y||²)
-
-Key parameters:
-- C: Regularization (lower = more regularization)
-- gamma: RBF kernel width (higher = more complex boundary)
+  Linear:     K(x,x') = x·x'                      → fast, baseline
+  Polynomial: K(x,x') = (γx·x' + r)^d             → interaction features
+  RBF/Gaussian: K(x,x') = exp(-γ||x-x'||²)        → most common, smooth boundary
+    γ small: wide influence, smooth boundary (underfitting risk)
+    γ large: narrow influence, complex boundary (overfitting risk)
 ```
+
+```python
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
+
+# SVM REQUIRES feature scaling (sensitive to feature magnitudes)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)  # fit on train only!
+X_test_scaled  = scaler.transform(X_test)
+
+# RBF kernel SVM with tuned hyperparameters
+param_grid = {'C': [0.1, 1, 10, 100], 'gamma': ['scale', 'auto', 0.001, 0.01]}
+svm = GridSearchCV(SVC(kernel='rbf', probability=True), param_grid, cv=5)
+svm.fit(X_train_scaled, y_train)
+print(f"Best params: {svm.best_params_}")
+```
+
+**🚨 Common Pitfalls**:
+- **Not scaling features** before SVM → RBF kernel computes distances, unscaled features dominate
+- SVM scales O(n²) to O(n³) with training samples → **not suitable for large datasets** (> 100K rows); use linear SVC or neural networks instead
+- High `gamma` AND high `C` together → severe overfitting, memorizes training set
+
+**💬 Follow-ups**: "Why does SVM use support vectors and not all points?" → Only points near the boundary affect the decision; interior points provide no additional constraint. "SVM vs logistic regression?" → LR gives probabilities and scales better; SVM maximizes margin (better for small datasets with complex boundaries).
 
 ### Q10: Explain feature selection methods
 ```
@@ -239,33 +443,57 @@ Best practices:
 ## Deep Learning Questions
 
 ### Q11: Explain backpropagation
+
+> **⚡ One-liner**: Backprop is reverse-mode automatic differentiation — it computes the gradient of the loss w.r.t. every weight by applying the chain rule backwards through the computation graph in a single backward pass.
+
+**💡 Intuition**: Each weight wants to know "how much am I responsible for the loss?" Backprop answers this by starting at the loss and distributing blame backwards — sharing intermediate computation so it's O(params) not O(params²).
+
 ```
-Backpropagation: Algorithm to compute gradients for neural network training
+Forward: x → [z=Wx+b] → [a=σ(z)] → [L=loss(a, y)]   store: x, z, a
+Backward (chain rule, right to left):
+  ∂L/∂W = ∂L/∂a · ∂a/∂z · ∂z/∂W = δ_output · σ'(z) · x^T
 
-Forward pass:
-- Compute activations layer by layer
-- Store intermediate values
+Gradient Issues:
+  Vanishing: sigmoid/tanh saturate → σ'(z)≈0 → gradients decay exponentially in deep nets
+  Exploding: RNNs multiply gradients over T timesteps → exponential growth
 
-Backward pass:
-- Compute loss gradient w.r.t. output
-- Propagate gradient backward using chain rule
-- ∂L/∂w = ∂L/∂a × ∂a/∂z × ∂z/∂w
-
-Key insights:
-- Chain rule enables efficient gradient computation
-- Compute gradients in O(n) vs O(n²) for numerical differentiation
-- Need to store activations for backward pass
-
-Gradient flow issues:
-- Vanishing: gradients → 0 (deep networks, sigmoid)
-- Exploding: gradients → ∞ (RNNs)
-
-Solutions:
-- Proper initialization (Xavier, He)
-- Batch/Layer normalization
-- Skip connections (ResNet)
-- Gradient clipping
+Fixes:
+  ✓ ReLU: gradient=1 for x>0, no saturation
+  ✓ Xavier init: Var(W) = 2/(fan_in + fan_out)  → stable variance through layers
+  ✓ He init:     Var(W) = 2/fan_in              → for ReLU networks
+  ✓ BatchNorm / LayerNorm: re-center activations
+  ✓ ResNet skip connections: gradient highway (∂(x+F(x))/∂x = 1 + ∂F/∂x)
+  ✓ Gradient clipping: g = g · min(1, max_norm/||g||)
 ```
+
+```python
+import numpy as np
+
+def manual_backprop(X, y, W, b, lr=0.01):
+    n = X.shape[0]
+    # --- FORWARD ---
+    z = X @ W + b
+    a = 1 / (1 + np.exp(-z))          # sigmoid
+    loss = -np.mean(y*np.log(a+1e-8) + (1-y)*np.log(1-a+1e-8))
+    
+    # --- BACKWARD (chain rule) ---
+    dL_da = -(y/(a+1e-8) - (1-y)/(1-a+1e-8)) / n
+    da_dz  = a * (1 - a)               # sigmoid derivative
+    dL_dz  = dL_da * da_dz
+    dL_dW  = X.T @ dL_dz              # accumulate gradient from all samples
+    dL_db  = np.sum(dL_dz, axis=0)
+    
+    W -= lr * dL_dW
+    b -= lr * dL_db
+    return W, b, loss
+```
+
+**🚨 Common Pitfalls**:
+- Confusing backprop (computes gradients) with gradient descent (uses them)
+- Forgetting backprop stores all activations → **memory scales with sequence length / depth**
+- `retain_graph=True` in PyTorch needed only when calling `.backward()` multiple times on same graph
+
+**💬 Follow-ups**: "What's automatic differentiation?" → PyTorch/JAX build a computation graph and auto-apply chain rule; backprop is just reverse-mode AD. "How does gradient checkpointing help?" → Trades compute for memory: recompute activations during backward instead of storing them.
 
 ### Q12: Compare different activation functions
 ```
@@ -299,31 +527,57 @@ Softmax: exp(xᵢ)/Σexp(xⱼ)
 ```
 
 ### Q13: What is batch normalization? Why does it help?
+
+> **⚡ One-liner**: BatchNorm normalizes each layer's inputs to zero mean/unit variance per mini-batch, then rescales with learned γ,β — stabilizing training, enabling higher learning rates, and acting as regularization.
+
+**💡 Intuition**: Without BatchNorm, weight updates in early layers constantly shift the distribution seen by later layers (internal covariate shift) — later layers always chase a moving target. BatchNorm re-anchors each layer's input so learning is more stable.
+
 ```
-Batch Normalization:
-1. Normalize activations: x̂ = (x - μ_batch) / σ_batch
-2. Scale and shift: y = γx̂ + β (learnable)
+Algorithm:
+  μ_B = mean over batch    σ²_B = variance over batch
+  x̂ = (x - μ_B) / √(σ²_B + ε)   ← normalize
+  y  = γ x̂ + β                  ← learned scale+shift (allows un-normalizing)
 
-Benefits:
-- Reduces internal covariate shift
-- Allows higher learning rates
-- Acts as regularization (due to batch statistics)
-- Reduces sensitivity to initialization
+Train vs Inference:
+  Training:   use current batch μ,σ²
+  Inference:  use RUNNING mean/variance (EMA accumulated during training)
+  → MUST call model.eval() or BatchNorm will use batch stats at inference!
 
-Where to apply:
-- After linear/conv layer, before activation
-- Or after activation (both work)
-
-Issues:
-- Depends on batch size
-- Different behavior train vs inference
-- Problematic for RNNs (use Layer Norm)
-
-Alternatives:
-- Layer Norm: Normalize across features (for transformers)
-- Instance Norm: Per-sample, per-channel (for style transfer)
-- Group Norm: Groups of channels (for small batches)
+Normalization comparison:
+  BatchNorm:    over (N, H, W) per channel   → needs large batch, breaks with batch_size=1
+  LayerNorm:    over (C, H, W) per sample    → batch-independent, standard for Transformers
+  InstanceNorm: over (H, W) per sample+ch    → removes style (used in style transfer)
+  GroupNorm:    over groups of channels       → works with small batches (detection models)
+  RMSNorm:      no mean centering, just scale → used in LLaMA, simpler/faster
 ```
+
+```python
+import torch
+import torch.nn as nn
+
+model = nn.Sequential(
+    nn.Linear(128, 64),
+    nn.BatchNorm1d(64),   # normalizes over batch dimension
+    nn.ReLU(),
+)
+
+# CRITICAL: switch modes!
+model.train()  # BN uses batch statistics
+out = model(x_batch)  # statistics computed from THIS batch
+
+model.eval()   # BN uses RUNNING statistics (stable, deterministic)
+out = model(x_batch)  # always same output for same input
+
+# Common mistake: forgetting model.eval() at inference
+# Result: different outputs each call (batch noise), worse performance
+```
+
+**🚨 Common Pitfalls**:
+- Forgetting `model.eval()` at inference → BatchNorm uses live batch stats → non-deterministic, worse results
+- Small batch size (< 8) with BatchNorm → noisy estimates; use GroupNorm or LayerNorm instead
+- Using BatchNorm with RNNs/Transformers — use LayerNorm (batch-independent)
+
+**💬 Follow-ups**: "Why LayerNorm in Transformers?" → Sequence lengths vary, batch sizes are small, and layer norm is batch-independent. "Does BatchNorm replace dropout?" → BN adds noise as regularization — you can reduce dropout, but they serve different purposes.
 
 ### Q14: Explain dropout. Why does it work?
 ```
@@ -441,35 +695,58 @@ Why it helps vanishing gradient:
 ```
 
 ### Q18: Explain the attention mechanism
+
+> **⚡ One-liner**: Attention computes a weighted sum of values, where weights come from the similarity between a query and a set of keys — letting every position directly attend to every other position in O(n²) time.
+
+**💡 Library analogy**: Query = your question, Keys = book titles, Values = book contents. Attention lets you retrieve a weighted mixture of books proportional to how relevant each title is to your question.
+
 ```
-Attention: Weighted sum of values based on query-key similarity
+Attention(Q, K, V) = softmax(QK^T / √d_k) · V
 
-Scaled Dot-Product Attention:
-Attention(Q, K, V) = softmax(QK^T / √d_k) V
-
-Components:
-- Query (Q): What we're looking for
-- Key (K): What we match against
-- Value (V): What we retrieve
-- √d_k: Scaling factor for stable gradients
+Why √d_k scaling?
+  Dot products grow with d_k: Var[q·k] = d_k if q,k ~ N(0,1)
+  Without scaling: softmax saturates (near one-hot) → vanishing gradients
+  Dividing by √d_k: keeps variance at 1 regardless of d_k
 
 Multi-Head Attention:
-- Run attention multiple times in parallel
-- Each head learns different relationships
-- Concatenate and project results
+  Run h heads in parallel, each in d_k/h subspace
+  Head 1: syntax (subject-verb)    Head 2: coreference (he → John)
+  Head 3: positional proximity     Head 4: semantic similarity
+  Output: Concat(head_1,...,head_h) W_O
 
-Self-Attention:
-- Q, K, V all come from same sequence
-- Each position attends to all positions
-- Captures long-range dependencies
+Self vs Cross Attention:
+  Self:  Q=K=V from SAME sequence    → intra-sequence dependencies
+  Cross: Q from decoder, K=V from encoder → decoder attends to encoder
 
-Benefits over RNN:
-- Parallel computation
-- Direct connections (no vanishing gradient)
-- O(1) path length between positions
-
-Complexity: O(n² × d) for sequence length n
+Complexity: O(n²·d) → quadratic in sequence length!
+  → Flash Attention: tile-based computation, O(n) memory vs O(n²)
+  → Sparse Attention: attend to subset of positions
 ```
+
+```python
+import torch, math
+import torch.nn.functional as F
+
+def attention(Q, K, V, mask=None):
+    """Q, K, V: (batch, heads, seq_len, d_k)"""
+    d_k = Q.size(-1)
+    scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(d_k)  # scale
+    if mask is not None:            # causal: block future positions
+        scores = scores.masked_fill(mask == 0, float('-inf'))
+    weights = F.softmax(scores, dim=-1)  # rows sum to 1
+    return torch.matmul(weights, V), weights  # return weights for interpretability
+
+# Causal mask: position i sees only positions 0..i
+seq_len = 10
+causal_mask = torch.tril(torch.ones(seq_len, seq_len)).bool()
+```
+
+**🚨 Common Pitfalls**:
+- Forgetting `√d_k` scaling → softmax saturation, vanishing gradients in large models
+- Saying O(n log n) — standard attention is **O(n²)**; Flash Attention only reduces memory, not FLOPs
+- Confusing causal mask (generation) with padding mask (variable-length batches); both needed in practice
+
+**💬 Follow-ups**: "What is Flash Attention?" → IO-aware exact attention using tiling to avoid materializing full n×n matrix; same result, O(n) memory. "KV cache?" → During generation, reuse K,V from previous tokens instead of recomputing.
 
 ### Q19: Explain the Transformer architecture
 ```
@@ -536,27 +813,37 @@ RMSNorm: Simplified Layer Norm
 ## GenAI & LLM Questions
 
 ### Q21: Explain the difference between GPT and BERT
-```
-GPT (Generative Pre-trained Transformer):
-- Decoder-only architecture
-- Causal/autoregressive: predicts next token
-- Pre-training: Language modeling (next token prediction)
-- Unidirectional attention (left-to-right)
-- Best for: Generation, few-shot learning
 
-BERT (Bidirectional Encoder Representations):
-- Encoder-only architecture
-- Pre-training: MLM + NSP
-  - Masked Language Modeling (15% tokens)
-  - Next Sentence Prediction
-- Bidirectional attention
-- Best for: Classification, NER, QA
+> **⚡ One-liner**: GPT is decoder-only with causal (left-to-right) attention, trained to predict the next token — great for generation. BERT is encoder-only with bidirectional attention, trained on masked token prediction — great for understanding tasks.
 
-Key trade-offs:
-- BERT: Better understanding, can't generate
-- GPT: Better generation, unidirectional context
-- T5: Encoder-decoder, text-to-text for all tasks
+**💡 Intuition**: BERT reads the whole sentence before answering (like an open-book test). GPT generates one word at a time without peeking ahead (like writing a story).
+
 ```
+                GPT (Decoder-only)      BERT (Encoder-only)     T5 (Enc-Dec)
+Attention       Causal (left-only)      Bidirectional           Both
+Pre-training    Next token prediction   MLM + NSP               Span corruption
+Strength        Generation, few-shot    Classification, NER, QA Translation, summarization
+Generate text?  Yes                     No                      Yes
+Context         Only past tokens        Full sequence           Enc sees all; Dec causal
+Examples        GPT-4, LLaMA, Mistral   BERT, RoBERTa           T5, FLAN-T5, BART
+
+MLM (BERT pre-training):
+  Input: "The [MASK] sat on the [MASK]"
+  Target: predict "cat" and "mat"
+  Why: forces model to use both left AND right context
+
+Why GPT dominates now:
+  - Scales better: decoder-only models scale to 100B+ params with stable training
+  - Few-shot emergent abilities appear at scale
+  - Can do understanding tasks too (just phrase as generation)
+```
+
+**🚨 Common Pitfalls**:
+- Saying BERT is "better" for all NLP — GPT-4 outperforms BERT on most understanding tasks now
+- Confusing "bidirectional" with "better" — BERT can't generate; GPT with enough scale is better at understanding too
+- Forgetting that BERT embeddings aren't directly comparable across layers (last layer is best for most tasks)
+
+**💬 Follow-ups**: "Why did decoder-only win?" → Simpler training objective (next token prediction scales cleanly); emergent few-shot abilities; no need for fine-tuning with RLHF. "RoBERTa vs BERT?" → RoBERTa removes NSP (was hurting, not helping), trains longer with more data.
 
 ### Q22: Explain tokenization methods (BPE, WordPiece, SentencePiece)
 ```
@@ -590,39 +877,63 @@ Trade-offs:
 ```
 
 ### Q23: What is LoRA? Why is it effective?
+
+> **⚡ One-liner**: LoRA freezes the pretrained model and adds trainable low-rank matrices ΔW = B·A to each layer, reducing trainable parameters from d×k to r×(d+k) where r ≪ min(d,k) — matching full fine-tuning with ~0.1% of parameters.
+
+**💡 Intuition**: Task-specific weight changes ΔW are empirically low-rank — they live in a small subspace. LoRA explicitly parameterizes this subspace with two thin matrices B(d×r) and A(r×k) instead of storing the full d×k update.
+
 ```
-LoRA (Low-Rank Adaptation):
-- Instead of fine-tuning all weights W
-- Train low-rank decomposition: ΔW = BA
-- B ∈ R^(d×r), A ∈ R^(r×k) where r << min(d,k)
-- Output: W₀x + BAx
+Full fine-tuning: W' = W₀ + ΔW      ← update all d×k weights
+LoRA:             W' = W₀ + B·A      ← freeze W₀, train B(d×r) and A(r×k)
 
-Benefits:
-1. Memory efficient
-   - Only store r×(d+k) params vs d×k
-   - Typical r = 8-64
-   
-2. No inference latency
-   - Merge: W' = W₀ + BA
-   - Same architecture as original
-   
-3. Task switching
-   - Keep base model, swap LoRA weights
-   - Multiple tasks with minimal storage
-   
-4. Prevents catastrophic forgetting
-   - Original weights frozen
-   - Small adaptation maintains knowledge
+Parameter savings:
+  d=4096, k=4096, full:     16.7M params
+  d=4096, k=4096, r=16 LoRA: 2×4096×16 = 131K params  (127x fewer!)
 
-Applied to:
-- Query and Value projections typically
-- Sometimes all linear layers
+Key design:
+  A initialized: Gaussian noise   B initialized: zeros
+  → At start, ΔW = BA = 0  (identical to pretrained model, stable warmup)
+  Output: W₀x + (α/r)·BAx  (α scales contribution, often set to r)
 
-QLoRA: LoRA + 4-bit quantization
-- Base model quantized to 4-bit
-- LoRA weights in higher precision
-- Enables 7B model fine-tuning on consumer GPU
+Where to apply:
+  Original paper: Q, V projections only
+  Modern best practice: ALL linear layers (Q, K, V, O, FFN up/down) for best results
+
+Merging for zero-latency inference:
+  W_merged = W₀ + B·A  (done once after training)
+  → Inference identical to original model architecture
+
+QLoRA (Dettmers 2023):
+  Base model: 4-bit NF4 quantization (NormalFloat4)
+  LoRA adapters: bfloat16
+  Paged optimizers: handle GPU OOM
+  Result: Fine-tune 65B model on single 48GB GPU!
 ```
+
+```python
+from peft import LoraConfig, get_peft_model, TaskType
+
+config = LoraConfig(
+    r=16,                                          # rank: controls capacity
+    lora_alpha=32,                                 # scaling factor (alpha/r = 2)
+    target_modules=["q_proj","k_proj","v_proj","o_proj"],  # which layers
+    lora_dropout=0.05,
+    task_type=TaskType.CAUSAL_LM,
+)
+peft_model = get_peft_model(model, config)
+peft_model.print_trainable_parameters()
+# trainable params: 4,194,304 || all params: 6,742,609,920 || trainable%: 0.06%
+
+# After training: merge for deployment
+merged = peft_model.merge_and_unload()  # W = W0 + BA, no PEFT overhead
+```
+
+**🚨 Common Pitfalls**:
+- Choosing `r=4` for complex tasks — start with `r=16` and tune down if memory-constrained
+- Not merging with `merge_and_unload()` before deployment → extra compute per forward pass
+- Only applying LoRA to Q,V (original paper) — applying to all linear layers gives better results
+
+**💬 Follow-ups**: "LoRA vs full fine-tuning?" → LoRA is better when compute/data are limited; full FT wins when task is very different from pretraining and you have lots of data. "DoRA?" → Decomposes W into magnitude+direction, trains both via LoRA; consistently outperforms LoRA.
 
 ### Q24: Explain RLHF (Reinforcement Learning from Human Feedback)
 ```
@@ -657,37 +968,70 @@ Alternatives:
 ```
 
 ### Q25: What is RAG? When should you use it?
+
+> **⚡ One-liner**: RAG grounds LLM generation in retrieved documents — fetch relevant content at query time, inject it into the prompt, and generate an answer — reducing hallucinations and keeping knowledge current without retraining.
+
+**💡 Intuition**: An LLM is an expert who only knows what was in their textbooks (training data). RAG gives them a library at query time. Better for dynamic/domain knowledge; fine-tuning is better for style/format/behavior changes.
+
 ```
-RAG (Retrieval-Augmented Generation):
-1. Retrieve: Find relevant documents for query
-2. Augment: Add documents to prompt context
-3. Generate: LLM generates answer using context
+RAG Pipeline:
+  Query → Embed query → ANN search → top-k docs → [system + context + query] → LLM → answer
 
-Components:
-- Embedding model: Convert text to vectors
-- Vector database: Store and search embeddings
-- LLM: Generate final response
+RAG vs Fine-tuning decision:
+  Use RAG when:               Use Fine-tuning when:
+  ✓ Knowledge changes often   ✓ Change model behavior/style
+  ✓ Need citations            ✓ Static knowledge base
+  ✓ Multiple knowledge bases  ✓ Latency critical (no retrieval)
+  ✓ Reduce hallucinations     ✓ Deep domain reasoning
 
-When to use RAG:
-✓ Need up-to-date information
-✓ Domain-specific knowledge
-✓ Need citations/sources
-✓ Reduce hallucinations
-✓ Keep model weights fixed
+Advanced Techniques:
+  Hybrid Search:  dense (embedding) + sparse (BM25) combined → better recall
+  Query Rewrite:  "einstein did" → "Einstein's contributions to physics"
+  Re-ranking:     cross-encoder re-scores top-100 → take top-5 (expensive but accurate)
+  Iterative RAG:  partial answer → identify gaps → retrieve again
+  Self-RAG:       model emits [Retrieve] token only when it needs external info
+  Contextual RAG: each chunk stored with LLM-generated parent-doc context
 
-When NOT to use RAG:
-✗ Real-time latency critical
-✗ Simple tasks model already knows
-✗ No relevant documents exist
-✗ Creative generation tasks
-
-Advanced techniques:
-- Hybrid search (dense + sparse)
-- Query rewriting/expansion
-- Re-ranking retrieved documents
-- Iterative retrieval
-- Self-RAG (model decides when to retrieve)
+Key metrics (RAGAS framework):
+  Context Precision:  retrieved chunks are relevant (no noise)
+  Context Recall:     all needed info retrieved (no gaps)
+  Faithfulness:       answer grounded in context (no hallucination)
+  Answer Relevancy:   answer addresses the question
 ```
+
+```python
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+# Minimal RAG implementation
+embedder = SentenceTransformer("all-MiniLM-L6-v2")
+
+def build_index(chunks):
+    embeddings = embedder.encode(chunks)  # (n_chunks, 384)
+    return embeddings, chunks
+
+def retrieve(query, embeddings, chunks, k=3):
+    q_emb = embedder.encode([query])[0]   # (384,)
+    # cosine similarity
+    sims = np.dot(embeddings, q_emb) / (np.linalg.norm(embeddings, axis=1) * np.linalg.norm(q_emb))
+    top_k = np.argsort(sims)[::-1][:k]
+    return [chunks[i] for i in top_k]
+
+def rag_prompt(query, context_docs):
+    context = "\n\n".join(context_docs)
+    return f"""Answer based ONLY on the provided context.
+Say 'I don't know' if not in context.
+
+Context:\n{context}\n\nQuestion: {query}\nAnswer:"""
+```
+
+**🚨 Common Pitfalls**:
+- **Lost in the middle**: LLMs attend less to middle of context → put most relevant chunks at start or end
+- **Chunking too small/large**: 256-512 tokens with 20% overlap is a good starting point
+- **No re-ranking**: Top-k by cosine similarity ≠ top-k by relevance to the specific question
+- **Different embedding models** for indexing vs querying → wrong similarity scores
+
+**💬 Follow-ups**: "Multi-hop questions?" → Iterative retrieval: generate partial answer, identify gaps, retrieve again. "Embedding model choice?" → Start with `text-embedding-3-small` (OpenAI) or `BGE-M3` (open source); evaluate on your domain.
 
 ### Q26: How do you evaluate RAG systems?
 ```
@@ -1310,20 +1654,43 @@ Infrastructure:
 ## Behavioral Questions
 
 ### Q34: Tell me about a challenging ML project
-```
-STAR Format:
-- Situation: What was the context/problem?
-- Task: What was your specific responsibility?
-- Action: What did you do? (Be specific about your contribution)
-- Result: What was the outcome? (Quantify if possible)
 
-Key points to cover:
-- Technical challenges and how you overcame them
-- Collaboration with team members
-- Trade-offs you considered
-- Learnings from the project
-- Impact on business/users
+> **Framework**: STAR + TECH — Situation → Task → Action (specific!) → Result (quantified!) + Technical depth (trade-offs and WHY).
+
 ```
+Answer Structure Template:
+
+[1] Situation (20 seconds):
+  "We had [business problem] affecting [scale/users] causing [quantified impact]."
+  → "Our recommendation CTR was 40%, below the 60% business target."
+
+[2] Task (10 seconds):
+  "My specific role was [X], I owned [Y]."
+  → "I owned feature engineering and model selection."
+
+[3] Action (60 seconds - MOST IMPORTANT):
+  "I chose X over Y because [technical trade-off reasoning]."
+  "Key challenge was [problem], solved by [specific approach]."
+  → "Replaced collaborative filtering with a two-tower neural model.
+     Challenge: cold start for new items — solved with content embeddings.
+     Chose two-tower over cross-features for serving speed —
+     item embeddings can be pre-computed offline."
+
+[4] Result (quantified!):
+  "This improved [metric] from X to Y, impacting [business outcome]."
+  → "CTR improved 40% → 58%, contributing $2M additional annual revenue."
+
+[5] Technical Depth (follow-up ready):
+  - What trade-offs did you make?
+  - What would you do differently?
+  - What was the biggest technical risk?
+```
+
+**🚨 Common Pitfalls**:
+- "We improved the model" → say WHO did WHAT and HOW specifically
+- No quantified result — always have at least one number
+- Skipping trade-offs — interviewers want to see you considered alternatives
+- Taking sole credit for team work — say "my contribution was..." not "I built everything"
 
 ### Q35: How do you stay updated with ML/AI advances?
 ```
@@ -1344,31 +1711,74 @@ Strategies:
 ```
 
 ### Q36: How do you approach debugging ML models?
+
+> **Framework**: Data → Baseline → Overfit small set → Learning curves → Error analysis → Ablations. Always rule out the simpler cause before adding complexity.
+
 ```
-Systematic approach:
-1. Verify data pipeline
-   - Check for data leaks
-   - Validate preprocessing
-   - Look at data distribution
+Debugging Checklist (in this order):
+
+1. VERIFY DATA FIRST (most bugs are here!)
+   - Shapes, dtypes, NaN counts match expectations?
+   - Label distribution: is it what you expect?
+   - Train/test leakage: any future data in train?
+   - Feature scaling applied consistently?
    
-2. Start simple
-   - Baseline model first
-   - Add complexity gradually
+2. ESTABLISH A SANE BASELINE
+   - Random model? Majority class? Mean prediction?
+   - Rule-based system? Linear model?
+   - If baseline beats your model — there's a bug
    
-3. Overfit small dataset
-   - If can't overfit, bug in model/training
-   - Then add regularization
+3. OVERFIT A SMALL DATASET (10-100 samples)
+   - A well-implemented model CAN overfit a tiny dataset
+   - If loss doesn't go near 0: bug in model, loss, or forward pass
+   - If it overfits: model works, now add regularization
    
-4. Learning curves
-   - High bias: Need more capacity
-   - High variance: Need more data/regularization
+4. LEARNING CURVES
+   - Train vs val loss over epochs and over data size
+   - High bias:    both curves high   → bigger model, more features
+   - High variance: gap between train/val → more data, regularization
+   - Diverging loss: lr too high or wrong loss function
    
-5. Error analysis
-   - Look at failure cases
-   - Find patterns in errors
-   - Feature importance
+5. ERROR ANALYSIS
+   - Look at worst predictions (highest loss samples)
+   - Find patterns: certain categories, edge cases, distributions?
+   - Confusion matrix: which classes are confused with which?
    
-6. Ablation studies
-   - Remove components one by one
-   - Understand contribution of each part
+6. ABLATION STUDIES
+   - Remove one component at a time
+   - Measure impact on val metric
+   - If removing a component HELPS — that component was hurting
+```
+
+```python
+# Quick debugging utilities
+import numpy as np
+
+# 1. Data sanity check
+def data_sanity(X_train, y_train, X_val, y_val):
+    print(f"Train shape: {X_train.shape}, Val shape: {X_val.shape}")
+    print(f"Train labels: {np.unique(y_train, return_counts=True)}")
+    print(f"Train NaNs: {np.isnan(X_train).sum()}, Val NaNs: {np.isnan(X_val).sum()}")
+    print(f"Train range: [{X_train.min():.2f}, {X_train.max():.2f}]")
+    # Check for leakage: train and val should have different distributions
+    print(f"Train mean: {X_train.mean():.3f}, Val mean: {X_val.mean():.3f}")
+
+# 2. Overfit tiny dataset to verify model implementation
+def verify_model(model, X_train, y_train, n_samples=32):
+    X_tiny = X_train[:n_samples]
+    y_tiny = y_train[:n_samples]
+    # Train until convergence on tiny set
+    for epoch in range(1000):
+        loss = model.train_step(X_tiny, y_tiny)
+        if epoch % 100 == 0:
+            print(f"Epoch {epoch}: loss = {loss:.6f}")
+    # Should reach near-zero loss; if not, there's a model bug
+```
+
+**🚨 Common Pitfalls**:
+- Jumping to complex solutions before checking data — most ML bugs are in data pipelines
+- Not establishing a baseline — hard to know if your model is actually good
+- Training too long to see if the model "eventually works" — if it can't overfit 32 samples, it never will
+
+**💬 Follow-ups**: "How do you debug NaN loss?" → Check: exploding gradients (add clipping), log of 0 in loss (add epsilon), division by 0 in normalization, incorrect masking.
 ```

@@ -1,5 +1,74 @@
 # Model Evaluation & Selection - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Evaluation is about estimating FUTURE performance, not past performance. Every evaluation mistake (data leakage, wrong CV strategy, wrong metric) leads to models that look great in experiments but fail in production.
+
+### Metric Selection Guide
+
+| Task | Primary Metric | When to prefer alternatives |
+|------|---------------|-----------------------------|
+| Binary classification (balanced) | Accuracy or AUC-ROC | - |
+| Binary classification (imbalanced) | F1 or PR-AUC | When positives are rare (<10%) |
+| Multi-class | Macro F1 | Micro F1 when class sizes matter |
+| Regression | RMSE | MAE when outliers are meaningful |
+| Ranking | NDCG@k, MAP | MRR when first result is paramount |
+| Probability output | Log-loss, Brier score | When calibration matters |
+| Ranking (rec systems) | NDCG, Recall@k | Hit rate when any positive matters |
+
+### Cross-Validation Strategies — Use the Right One!
+
+```
+Standard K-Fold:
+  Use: IID data, no groups or time structure
+  Pitfall: DO NOT use for time series (data leakage!)
+
+Stratified K-Fold:
+  Use: Classification with class imbalance
+  Why: Ensures each fold has same class distribution as full dataset
+
+Time Series Split:
+  Use: ANY time-series data (financial, logs, transactions)
+  Rule: ALWAYS train on past, test on future (never shuffle!)
+  Implement: sklearn.model_selection.TimeSeriesSplit
+
+Group K-Fold:
+  Use: When samples within a group must stay together
+  Example: medical patients (all samples from patient X in same fold)
+  Prevents: Model memorizing patient-specific patterns
+
+Nested CV:
+  Use: Hyperparameter tuning + performance estimation simultaneously
+  Outer loop: Performance estimation (K-fold)
+  Inner loop: Hyperparameter selection (K-fold)
+  Prevents: Selection bias inflating performance estimates
+```
+
+### A/B Testing Fundamentals for ML
+
+```
+Key parameters to specify:
+  α (significance level): typically 0.05 (5% false positive rate)
+  β (power):             typically 0.80 (80% true positive rate)
+  Minimum detectable effect (MDE): smallest improvement worth detecting
+  Sample size: calculated from above → n = 16σ²/δ²  (for α=0.05, β=0.8)
+
+Common mistakes:
+  Peeking: checking results before planned sample size (inflates false positives)
+  Wrong randomization unit: user-level vs session-level vs request-level
+  Multiple testing: testing 10 variants without Bonferroni correction
+  Novelty effect: new UI feature inflates metrics short-term
+```
+
+### 🚨 Top Interview Pitfalls
+- Using **K-Fold on time series** — training on future data to predict the past is leakage
+- Doing **hyperparameter tuning on test set** and reporting those results — test set must be touched only once
+- Saying "the model has 95% accuracy" without specifying **on what dataset** and **which metric**
+- Forgetting that **AUC-ROC is threshold-independent** but deployment requires choosing a threshold
+- Not knowing that **log-loss penalizes confident wrong predictions** much more than uncertain wrong predictions
+
+---
+
 ## Table of Contents
 1. [Classification Metrics](#classification-metrics)
 2. [Regression Metrics](#regression-metrics)

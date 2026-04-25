@@ -1,5 +1,79 @@
 # Deep Learning Training Techniques - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Modern deep learning training is an engineering discipline. Beyond the basic gradient descent loop, you need: proper regularization, learning rate scheduling, mixed precision, and distributed training strategies.
+
+### Regularization Techniques — When to Use Each
+
+| Technique | Mechanism | Best For | Trade-off |
+|-----------|-----------|----------|----------|
+| Dropout | Randomly zero neurons | Dense layers, MLPs | Slows training, incompatible with BatchNorm |
+| L2 (Weight Decay) | Penalty on weight magnitude | Most models | Always use with AdamW |
+| BatchNorm | Normalize activations | CNNs, large batches | Fails with small batches |
+| Data Augmentation | Synthetic training examples | Image/audio/text | Task-specific design |
+| Early Stopping | Stop when val loss increases | All models | Need separate val set |
+| Label Smoothing | Soften one-hot targets | Classification | Reduces overconfidence |
+
+### Learning Rate Schedules — Critical for Transformers
+
+```
+Warmup + Cosine Decay (Transformers standard):
+  Step 1-N: linearly increase lr from 0 to max_lr  (prevent early instability)
+  Step N+: cosine decay to min_lr (smooth landing)
+
+Why warmup? Early in training, weights are random → gradients are noisy.
+  A high initial lr causes divergence. Warmup lets the model stabilize first.
+
+Cyclical LR (Smith 2017):
+  Oscillate between lr_min and lr_max
+  Helps escape local minima and saddle points
+
+One-Cycle Policy (fast.ai):
+  Phase 1: lr increases (momentum decreases)
+  Phase 2: lr decreases (momentum increases)
+  Often trains faster to same performance
+```
+
+### Mixed Precision Training — Why It Matters
+
+```python
+import torch
+from torch.cuda.amp import GradScaler, autocast
+
+scaler = GradScaler()  # handles gradient scaling for fp16
+
+for batch in dataloader:
+    optimizer.zero_grad()
+    
+    # Forward pass in fp16 (2x faster on modern GPUs, half memory)
+    with autocast():
+        output = model(batch)
+        loss = criterion(output, targets)
+    
+    # Scale loss before backward (prevents underflow in fp16)
+    scaler.scale(loss).backward()
+    
+    # Unscale before gradient clipping
+    scaler.unscale_(optimizer)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    
+    # Step optimizer and update scaler
+    scaler.step(optimizer)
+    scaler.update()
+
+# Why: fp16 is 2x faster + uses half the memory vs fp32
+# GradScaler prevents NaN from fp16 underflow in backward pass
+```
+
+### 🚨 Top Interview Pitfalls
+- Not knowing **gradient clipping** is standard for Transformers (clip_norm=1.0) and RNNs (clip_norm=5.0)
+- Saying "just add dropout" without noting it should be **removed or reduced** when using BatchNorm (both add noise)
+- Not mentioning **learning rate warmup** when designing Transformer training — critical for stability
+- Forgetting that **label smoothing** (typically 0.1) reduces overconfidence and improves calibration
+
+---
+
 ## Table of Contents
 1. [Training Loop Best Practices](#training-loop-best-practices)
 2. [Data Loading and Augmentation](#data-loading-and-augmentation)

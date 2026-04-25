@@ -1,5 +1,104 @@
 # Iterators, Generators & Context Managers - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Generators produce values lazily (on demand), enabling memory-efficient processing of infinite or large sequences. They underpin Python's entire iteration model.
+
+### Iterator Protocol — How `for` Loops Work
+
+```python
+# A for loop is syntactic sugar for:
+it = iter(my_list)       # calls my_list.__iter__()
+while True:
+    try:
+        val = next(it)   # calls it.__next__()
+        # do something with val
+    except StopIteration:
+        break
+
+# Custom iterator: implement __iter__ and __next__
+class CountUp:
+    def __init__(self, limit):
+        self.limit = limit
+        self.current = 0
+    def __iter__(self): return self     # returns itself
+    def __next__(self):
+        if self.current >= self.limit:
+            raise StopIteration
+        self.current += 1
+        return self.current
+
+for n in CountUp(3):
+    print(n)  # 1, 2, 3
+```
+
+### Generators — Lazy Iterators Made Simple
+
+```python
+# Generator function: use yield instead of return
+def fibonacci():
+    a, b = 0, 1
+    while True:             # infinite sequence!
+        yield a             # pause, return value, resume on next()
+        a, b = b, a + b
+
+fib = fibonacci()
+print(next(fib))  # 0
+print(next(fib))  # 1
+print(next(fib))  # 1
+
+# Generator expression: like list comprehension but lazy
+big_squares = (x**2 for x in range(10**9))  # O(1) memory!
+first_10 = [next(big_squares) for _ in range(10)]
+
+# Why generators beat lists for large data:
+list_version = [x**2 for x in range(10**6)]   # allocates 8MB in memory
+gen_version  = (x**2 for x in range(10**6))   # allocates ~120 bytes!
+
+# Practical: process large file line by line
+def read_large_file(filepath):
+    with open(filepath) as f:
+        for line in f:          # f is itself a generator/iterator!
+            yield line.strip()  # one line in memory at a time
+```
+
+### Context Managers — The `with` Statement
+
+```python
+# Context manager protocol: __enter__ and __exit__
+class ManagedResource:
+    def __enter__(self):
+        print("Acquiring resource")
+        return self   # returned as 'as' target
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print("Releasing resource")
+        return False  # False = don't suppress exceptions
+
+with ManagedResource() as r:
+    print("Using resource")
+# "Releasing resource" called even if exception occurs!
+
+# Simpler: use contextlib.contextmanager
+from contextlib import contextmanager
+
+@contextmanager
+def managed_resource():
+    print("Acquire")
+    try:
+        yield  # code inside 'with' block runs here
+    finally:
+        print("Release")  # ALWAYS runs, even on exception
+```
+
+### 🚨 Top Interview Pitfalls
+- **Generators are single-use**: once exhausted, they cannot be restarted; create a new generator
+- `return value` inside a generator raises `StopIteration(value)` — it does NOT return a regular value
+- Generator expressions vs list comprehensions: use `()` for generators, `[]` for lists; generators are lazy
+- `__exit__` returning `True` **suppresses** exceptions — almost always return `False`
+
+---
+
 ## Table of Contents
 1. [Iterator Protocol](#iterator-protocol)
 2. [Generators](#generators)

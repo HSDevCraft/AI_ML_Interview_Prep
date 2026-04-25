@@ -1,4 +1,48 @@
-# Convolutional Neural Networks (CNNs) - Complete Guide
+# CNNs - Complete Guide
+
+## ⚡ Interview Quick Summary
+
+> **Core insight**: CNNs exploit spatial structure through local connectivity (convolutions) and translation invariance (weight sharing + pooling). Every design choice (kernel size, stride, padding, depth vs width) is a trade-off between receptive field, compute, and parameter count.
+
+### Convolution Math — Must Know
+
+```
+Output size: O = floor((I - K + 2P) / S) + 1
+  I = input size, K = kernel size, P = padding, S = stride
+
+Example: I=32, K=3, P=1, S=1  →  O = (32-3+2)/1 + 1 = 32  (same padding)
+Example: I=32, K=3, P=0, S=1  →  O = (32-3+0)/1 + 1 = 30  (valid padding)
+Example: I=32, K=3, P=0, S=2  →  O = (32-3+0)/2 + 1 = 15  (stride 2 halves size)
+
+Parameters in conv layer:
+  Params = K×K×C_in×C_out + C_out (biases)
+  Example: 3×3×3×64 + 64 = 1,792 params  (first AlexNet layer)
+  vs Dense: 32×32×3×1000 = 3.07M params  → weight sharing is key!
+
+Receptive field (grows with depth):
+  Stack of three 3×3 convs has 7×7 receptive field
+  Same as one 7×7 conv but fewer params: 3×(3×3×C×C) < 7×7×C×C
+```
+
+### Architecture Evolution — Key Ideas Per Model
+
+| Model | Year | Key Innovation | Params |
+|-------|------|---------------|--------|
+| LeNet | 1989 | First CNN | 60K |
+| AlexNet | 2012 | ReLU, Dropout, GPU | 60M |
+| VGG | 2014 | Deep stacks of 3×3 convs | 138M |
+| GoogLeNet | 2014 | Inception modules, 1×1 bottleneck | 6.8M |
+| ResNet | 2015 | Residual connections, depth=152 | 25M |
+| EfficientNet | 2019 | Compound scaling (depth+width+res) | 66M |
+| ViT | 2020 | Pure attention (no convolution) | 86M |
+
+### 🚨 Top Interview Pitfalls
+- Forgetting **1×1 convolutions** (Inception): they change channel depth without affecting spatial dims; add non-linearity; cheap channel mixing
+- Not knowing why ResNet uses **3×3+1×1 bottleneck**: saves compute (1×1 reduces channels before expensive 3×3)
+- Saying "deeper = better" without mentioning the degradation problem ResNet solved
+- Forgetting **global average pooling** replaces fully-connected layers in modern CNNs (fewer params, no fixed input size)
+
+---
 
 ## Table of Contents
 1. [Convolution Operations](#convolution-operations)

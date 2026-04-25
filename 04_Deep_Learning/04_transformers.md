@@ -1,5 +1,65 @@
 # Transformers - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Transformers replace recurrence with self-attention, enabling parallelism and direct O(1) path length between any two positions. Every architectural detail (positional encoding, layer norm placement, FFN ratio) has a reason.
+
+### Transformer Building Blocks Explained
+
+```
+Encoder block (BERT-style):
+  Input → [LayerNorm] → [Multi-Head Self-Attention] → [Add residual] →
+           [LayerNorm] → [FFN: Linear → GELU → Linear] → [Add residual]
+
+Decoder block (GPT-style, decoder-only):
+  Same as encoder BUT with causal (triangular) attention mask
+  → Position i can only attend to positions 0..i
+
+Key design ratios (empirically tuned):
+  d_ff = 4 × d_model       (FFN expansion ratio)
+  d_k = d_model / n_heads   (per-head dimension)
+  Typical: d_model=512, n_heads=8, d_k=64, d_ff=2048
+```
+
+### Why Each Component Exists
+
+| Component | Purpose | Remove it and... |
+|-----------|---------|------------------|
+| Residual connections | Gradient highway, identity shortcut | Training collapses, depth−4 is limit |
+| Layer Normalization | Stable activations, faster training | Very sensitive to lr, slow training |
+| Multi-head (vs single) | Learn different relationship types | Only one attention pattern per layer |
+| FFN after attention | Non-linear feature transformation | Purely linear model, poor expressivity |
+| Positional encoding | Inject position info (no recurrence) | Model is permutation-invariant (bad!) |
+| Causal mask | Prevent future token peeking | Non-autoregressive (can't generate) |
+
+### Positional Encoding: Sinusoidal vs Learned vs RoPE
+
+```
+Sinusoidal (original paper):
+  PE(pos, 2i)   = sin(pos / 10000^(2i/d_model))
+  PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))
+  Pros: generalizes to longer sequences, no parameters
+  Cons: absolute positions, not as good as learned
+
+Learned (BERT, GPT-2):
+  Embed each position index as a vector
+  Pros: flexible, learns task-optimal encoding
+  Cons: fixed max length, doesn't extrapolate
+
+RoPE (LLaMA, Mistral, GPT-NeoX):
+  Encodes RELATIVE position by rotating Q and K vectors
+  Pros: relative positions (better for understanding), extrapolates well
+  Cons: slightly more complex implementation
+```
+
+### 🚨 Top Interview Pitfalls
+- Forgetting that the **FFN has 4x more parameters** than attention in typical configurations
+- Saying transformers are O(n²) in time AND memory — Flash Attention reduces memory to O(n) but FLOPs stay O(n²)
+- Confusing **pre-norm** (modern: norm before attention) vs **post-norm** (original: norm after residual)
+- Not knowing that **cross-attention is self-attention** with Q from one source and K,V from another
+
+---
+
 ## Table of Contents
 1. [Self-Attention Mechanism](#self-attention-mechanism)
 2. [Transformer Architecture](#transformer-architecture)

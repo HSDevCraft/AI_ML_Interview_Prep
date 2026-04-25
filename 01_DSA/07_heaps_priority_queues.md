@@ -1,5 +1,86 @@
 # Heaps & Priority Queues - Complete In-Depth Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Python's `heapq` is a **min-heap**. For max-heap, negate values. Heaps give O(log n) insert/extract-min and O(1) peek — use when you repeatedly need the min/max of a growing set.
+
+### When to Use a Heap
+
+```
+✓ Top-K elements (largest or smallest)
+✓ Merge K sorted lists/arrays
+✓ Running median (two heaps)
+✓ Dijkstra's shortest path
+✓ Task scheduling by priority
+✓ K closest points to origin
+```
+
+### Python Heap Essentials
+
+```python
+import heapq
+
+# MIN-HEAP (Python default)
+heap = []
+heapq.heappush(heap, 3)
+heapq.heappush(heap, 1)
+heapq.heappush(heap, 2)
+print(heap[0])          # peek: 1 (min element) O(1)
+print(heapq.heappop(heap))  # pop min: 1, O(log n)
+
+# Build heap from list: O(n) via sift-down (faster than n inserts)
+nums = [3, 1, 4, 1, 5, 9, 2]
+heapq.heapify(nums)     # in-place O(n)
+
+# MAX-HEAP: negate values
+max_heap = []
+heapq.heappush(max_heap, -5)  # push -5 (represents 5)
+heapq.heappush(max_heap, -3)
+max_val = -heapq.heappop(max_heap)  # negate back: 5
+
+# Heap of tuples: sorted by first element
+heapq.heappush(heap, (priority, item))  # (3, 'task_a'), (1, 'task_b')
+```
+
+### Key Patterns
+
+```python
+# TOP-K LARGEST: min-heap of size k
+def top_k_largest(nums, k):
+    heap = nums[:k]
+    heapq.heapify(heap)            # O(k)
+    for num in nums[k:]:
+        if num > heap[0]:           # better than current smallest in top-k
+            heapq.heapreplace(heap, num)  # O(log k)
+    return heap
+
+# RUNNING MEDIAN: two heaps
+class MedianFinder:
+    def __init__(self):
+        self.lo = []  # max-heap (negated): lower half
+        self.hi = []  # min-heap: upper half
+    
+    def addNum(self, num):
+        heapq.heappush(self.lo, -num)          # always push to lo first
+        heapq.heappush(self.hi, -self.lo[0])   # balance: lo max → hi
+        heapq.heappop(self.lo)
+        if len(self.lo) < len(self.hi):        # keep |lo| >= |hi|
+            heapq.heappush(self.lo, -heapq.heappop(self.hi))
+    
+    def findMedian(self):
+        if len(self.lo) > len(self.hi):
+            return -self.lo[0]
+        return (-self.lo[0] + self.hi[0]) / 2
+```
+
+### 🚨 Top Interview Pitfalls
+- Python `heapq` is **min-heap only** — negate for max-heap, don't try to use it directly
+- `heap[0]` is O(1) peek, but **random access is NOT sorted** — only the root is guaranteed minimum
+- For Top-K Largest, use a **min-heap of size K** (not a max-heap) — counter-intuitive but more efficient
+- `heapq.nlargest(k, nums)` is O(n log k) and convenient but creates a new list; use a running heap for streaming data
+
+---
+
 ## Table of Contents
 1. [Fundamentals](#fundamentals)
 2. [Heap Implementation](#heap-implementation)

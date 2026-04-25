@@ -1,5 +1,81 @@
 # Stacks & Queues - Complete In-Depth Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Stack = LIFO (Last In First Out). Queue = FIFO (First In First Out). Monotonic stacks are the key pattern for "next greater/smaller element" problems.
+
+### When to Use Each
+
+```
+Stack problems:           Queue problems:
+  Balanced parentheses     BFS traversal
+  Evaluate expressions     Level-order processing
+  Next greater element     Sliding window maximum (deque)
+  Function call tracing    Task scheduling
+  Undo/redo               Producer-consumer
+  Monotonic stack          Monotonic deque
+```
+
+### Monotonic Stack — Most Common Interview Pattern
+
+```python
+def next_greater_element(nums):
+    """
+    For each element, find the next element that is greater.
+    Monotonic stack maintains elements in DECREASING order.
+    When we find a greater element, it's the 'next greater' for stack top.
+    """
+    n = len(nums)
+    result = [-1] * n
+    stack = []  # stores indices, not values
+    
+    for i in range(n):
+        # Pop elements smaller than current (current is their next greater)
+        while stack and nums[stack[-1]] < nums[i]:
+            idx = stack.pop()
+            result[idx] = nums[i]  # nums[i] is next greater for nums[idx]
+        stack.append(i)
+    
+    return result
+
+# Examples of monotonic stack problems:
+# Next Greater Element (above)
+# Largest Rectangle in Histogram (increasing stack)
+# Daily Temperatures (decreasing stack, find warmer day)
+# Trapping Rain Water (can also use stack)
+```
+
+### Python Stack and Queue
+
+```python
+# STACK: use list (append/pop from same end)
+stack = []
+stack.append(1)    # push: O(1)
+stack.append(2)
+top = stack[-1]    # peek: O(1)
+stack.pop()        # pop: O(1)
+
+# QUEUE: use collections.deque (O(1) both ends)
+from collections import deque
+queue = deque()
+queue.append(1)    # enqueue right: O(1)
+queue.append(2)
+queue.popleft()    # dequeue left: O(1)  ← list.pop(0) is O(n)!
+
+# DEQUE (double-ended queue): both ends O(1)
+dq = deque(maxlen=3)  # maxlen: auto-drops oldest when full
+dq.appendleft(0)      # add to left
+dq.popleft()          # remove from left
+```
+
+### 🚨 Top Interview Pitfalls
+- Using `list.pop(0)` for queue dequeue — it's O(n)! Use `collections.deque.popleft()` which is O(1)
+- Forgetting to handle **empty stack** before accessing `stack[-1]` — always check `if stack:` first
+- Monotonic stack: decide INCREASING (for "next smaller") vs DECREASING (for "next greater") based on problem
+- **Stack overflow** for recursive DFS on large graphs — convert to iterative with an explicit stack
+
+---
+
 ## Table of Contents
 1. [Fundamentals](#fundamentals)
 2. [Stack Implementation](#stack-implementation)

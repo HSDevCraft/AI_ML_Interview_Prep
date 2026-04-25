@@ -1,5 +1,72 @@
 # Linked Lists - Complete In-Depth Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Linked list problems almost always reduce to pointer manipulation. Draw the list before coding, trace carefully, and always save `next` before breaking a link.
+
+### Pattern Catalog
+
+```
+Fast/Slow Pointers (Floyd's):    cycle detection, middle node, kth from end
+Dummy Head Node:                 simplifies edge cases (empty list, single node)
+In-place Reversal:               reverse entire list, reverse k-group
+Merge:                           merge sorted lists, merge k sorted lists
+Two Lists:                       intersection, palindrome check
+```
+
+### Fast/Slow Pointer Template
+
+```python
+def find_middle(head):
+    slow = fast = head
+    while fast and fast.next:    # fast moves 2x speed
+        slow = slow.next
+        fast = fast.next.next
+    return slow                  # slow is at middle
+
+def has_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow is fast:         # they meet → cycle!
+            return True
+    return False                 # fast hit None → no cycle
+
+def kth_from_end(head, k):
+    fast = slow = head
+    for _ in range(k):           # advance fast by k
+        fast = fast.next
+    while fast:                  # move both until fast hits end
+        slow = slow.next
+        fast = fast.next
+    return slow                  # slow is k from end
+```
+
+### Dummy Node Pattern — Simplifies Edge Cases
+
+```python
+def remove_nth_from_end(head, n):
+    dummy = ListNode(0)
+    dummy.next = head            # dummy before head handles removing head
+    fast = slow = dummy
+    for _ in range(n + 1):       # advance fast n+1 steps
+        fast = fast.next
+    while fast:
+        slow = slow.next
+        fast = fast.next
+    slow.next = slow.next.next   # skip the target node
+    return dummy.next            # return dummy.next (handles head removal)
+```
+
+### 🚨 Top Interview Pitfalls
+- **Forgetting to save `next`** before breaking a link during reversal — always `nxt = curr.next` first
+- **Not returning `dummy.next`** when using dummy head pattern (returns wrong node)
+- For **cycle start**: after slow==fast, reset one pointer to head and move both at speed 1 — they meet at cycle start
+- **Modifying input vs copying**: clarify with interviewer whether in-place modification is OK
+
+---
+
 ## Table of Contents
 1. [Fundamentals](#fundamentals)
 2. [Singly Linked List](#singly-linked-list)

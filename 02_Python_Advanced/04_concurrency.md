@@ -1,5 +1,100 @@
 # Concurrency & Parallelism - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Python has three concurrency models. Choose based on what the bottleneck is: IO-bound → `asyncio` or `threading`; CPU-bound → `multiprocessing`. The GIL prevents true thread parallelism for CPU tasks.
+
+### When to Use Each Model
+
+```
+                Threading     Multiprocessing    Asyncio
+GIL impact       Limited       None (own GIL)     N/A (single thread)
+CPU-bound        ✗ No          ✓ Yes              ✗ No
+IO-bound         ✓ Yes         ✓ Overkill         ✓ Best
+Memory           Shared        Separate           Shared
+Overhead         Low           High (fork/spawn)  Very low
+Best for         IO + simple   CPU computation    High concurrency IO
+
+Typical use cases:
+  Threading:       File IO, HTTP requests, database calls (simple cases)
+  Multiprocessing: Data processing, ML training, image processing
+  Asyncio:         Web servers, API clients, websockets, many concurrent IO
+```
+
+### Asyncio — The Modern Way for IO-Bound
+
+```python
+import asyncio
+import aiohttp
+
+# async/await: cooperative multitasking (only one coroutine runs at a time)
+async def fetch_url(session, url):
+    async with session.get(url) as response:
+        return await response.json()   # yields control while waiting
+
+async def fetch_all(urls):
+    async with aiohttp.ClientSession() as session:
+        # asyncio.gather: run coroutines concurrently (not in parallel!)
+        tasks = [fetch_url(session, url) for url in urls]
+        results = await asyncio.gather(*tasks)  # all run concurrently
+    return results
+
+# Run the event loop
+asyncio.run(fetch_all(["http://api1.com", "http://api2.com"]))
+# With asyncio: 100 concurrent requests take ~= time of 1 request!
+# With sequential: 100 requests take 100x time of 1 request
+```
+
+### ThreadPoolExecutor — IO Parallelism Made Simple
+
+```python
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import requests
+
+urls = ["http://api1.com", "http://api2.com", "http://api3.com"]
+
+# Threading for IO-bound
+with ThreadPoolExecutor(max_workers=10) as executor:
+    results = list(executor.map(requests.get, urls))  # concurrent requests
+
+# Multiprocessing for CPU-bound
+def cpu_heavy(n):
+    return sum(i*i for i in range(n))
+
+with ProcessPoolExecutor(max_workers=4) as executor:  # 4 CPU cores
+    results = list(executor.map(cpu_heavy, [10**6, 10**6, 10**6, 10**6]))
+```
+
+### Thread Safety — Common Issues
+
+```python
+import threading
+
+# Race condition example
+counter = 0
+lock = threading.Lock()
+
+def increment():
+    global counter
+    # BAD (race condition): counter += 1  (read-modify-write is NOT atomic!)
+    with lock:        # GOOD: mutex protects the critical section
+        counter += 1
+
+threads = [threading.Thread(target=increment) for _ in range(1000)]
+for t in threads: t.start()
+for t in threads: t.join()
+print(counter)  # 1000 (correct with lock)
+```
+
+### 🚨 Top Interview Pitfalls
+- Saying "threads make Python faster for CPU tasks" — they don't due to the GIL; use `multiprocessing`
+- Forgetting `t.join()` after spawning threads — main thread may exit before workers finish
+- Not knowing that `asyncio` is **single-threaded** — it's concurrency via cooperative yielding, not parallelism
+- Using `time.sleep()` in async code — blocks the event loop; use `asyncio.sleep()` instead
+- Deadlock: acquiring locks in different orders in different threads — always acquire in consistent order
+
+---
+
 ## Table of Contents
 1. [Concurrency Concepts](#concurrency-concepts)
 2. [Threading](#threading)

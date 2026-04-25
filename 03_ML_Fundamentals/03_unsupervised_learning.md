@@ -1,5 +1,65 @@
 # Unsupervised Learning - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Unsupervised learning finds structure in unlabeled data. Clustering groups similar points; dimensionality reduction finds compact representations. Both require careful evaluation since there's no ground truth.
+
+### Clustering Algorithm Comparison
+
+| Algorithm | Cluster Shape | Scales | Handles Noise | Needs k? |
+|-----------|--------------|--------|---------------|----------|
+| K-Means | Spherical, equal size | O(nkd) | No | Yes |
+| DBSCAN | Arbitrary shape | O(n log n) | Yes (noise points) | No |
+| Hierarchical | Any (dendrogram) | O(n² log n) | Partial | No (cut level) |
+| GMM | Elliptical (soft assign) | O(nkd) | No | Yes |
+| HDBSCAN | Arbitrary, variable density | O(n log n) | Yes | No |
+
+### K-Means — Must Know Internals
+
+```
+Algorithm:
+  1. Initialize k centroids (random++ for better init: k-means++)
+  2. Assign each point to nearest centroid (E-step)
+  3. Update centroids = mean of assigned points (M-step)
+  4. Repeat until convergence
+
+Key properties:
+  - Minimizes within-cluster sum of squares (WCSS)
+  - Guaranteed to converge but may find local minimum (run multiple times!)
+  - Sensitive to initialization → use k-means++ or run 10x with different seeds
+  - Fails with non-spherical clusters, very different densities
+
+Choosing k:
+  Elbow method: plot WCSS vs k, choose the "elbow"
+  Silhouette score: measures how similar point is to own cluster vs neighbors
+  Silhouette ∈ [-1, 1], higher = better (>0.5 is good)
+```
+
+### Dimensionality Reduction Comparison
+
+```
+PCA:     Linear, fast, global structure, interpretable axes
+         Use: preprocessing for ML, multicollinearity removal
+
+t-SNE:   Non-linear, for visualization only, perplexity controls local structure
+         CANNOT add new points, non-deterministic, don't interpret distances
+
+UMAP:    Non-linear, faster than t-SNE, preserves more global structure
+         Better for clustering visualization, can add new points
+
+Autoencoder: Learns compressed representation via reconstruction
+             Flexible, task-specific, good for images
+```
+
+### 🚨 Top Interview Pitfalls
+- Not normalizing features before K-Means (distance-based, sensitive to scale)
+- Saying t-SNE distances are meaningful — they're **NOT**, only cluster membership can be interpreted
+- Forgetting that K-Means needs k specified — DBSCAN is better when you don't know k
+- Not mentioning **silhouette score** for evaluating clustering (no labels needed!)
+- Confusing **PCA for visualization** (OK) vs **PCA for feature engineering** before supervised learning (be careful — may discard discriminative features)
+
+---
+
 ## Table of Contents
 1. [Clustering Algorithms](#clustering-algorithms)
 2. [Dimensionality Reduction](#dimensionality-reduction)

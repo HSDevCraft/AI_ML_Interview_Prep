@@ -1,5 +1,108 @@
 # Functions, Closures & Decorators - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Functions are first-class objects in Python — they can be passed, returned, and stored. Closures capture enclosing scope; decorators wrap functions to add behavior without modifying source code.
+
+### Closures — The Foundation of Decorators
+
+```python
+# A closure: inner function captures outer variable even after outer returns
+def make_multiplier(n):
+    def multiply(x):
+        return x * n    # 'n' is captured from enclosing scope
+    return multiply
+
+double = make_multiplier(2)
+triple = make_multiplier(3)
+print(double(5))  # 10
+print(triple(5))  # 15
+
+# Classic closure pitfall: loop variable captured by reference, not value
+funcs = [lambda: i for i in range(3)]
+print([f() for f in funcs])  # [2, 2, 2]  <- all capture same 'i'
+
+# Fix: capture by value using default argument
+funcs = [lambda i=i: i for i in range(3)]
+print([f() for f in funcs])  # [0, 1, 2]  ✓
+```
+
+### Decorator Pattern — Step by Step
+
+```python
+import functools
+import time
+
+# A decorator is a function that takes a function and returns a function
+def timer(func):
+    @functools.wraps(func)   # preserves __name__, __doc__, etc.
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)    # call original function
+        elapsed = time.perf_counter() - start
+        print(f"{func.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
+
+@timer                    # equivalent to: my_func = timer(my_func)
+def my_func(n):
+    return sum(range(n))
+
+my_func(1_000_000)        # automatically times and prints
+
+# Decorator with arguments (factory pattern)
+def retry(max_attempts=3, exceptions=(Exception,)):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    if attempt == max_attempts - 1:
+                        raise
+                    print(f"Attempt {attempt+1} failed: {e}, retrying...")
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3, exceptions=(ConnectionError,))
+def fetch_data(url):
+    pass   # actual implementation
+```
+
+### Key Functional Tools
+
+```python
+from functools import partial, lru_cache, reduce
+
+# lru_cache: memoization decorator (caches results)
+@lru_cache(maxsize=128)  # None = unlimited cache
+def fib(n):
+    if n < 2: return n
+    return fib(n-1) + fib(n-2)   # O(n) with cache, O(2^n) without
+
+# partial: fix some arguments of a function
+def power(base, exp): return base ** exp
+square = partial(power, exp=2)  # fix exp=2
+print(square(5))  # 25
+
+# Use *args and **kwargs for flexible wrappers
+def log_calls(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):   # accepts any signature
+        print(f"Calling {func.__name__} with args={args}, kwargs={kwargs}")
+        return func(*args, **kwargs)
+    return wrapper
+```
+
+### 🚨 Top Interview Pitfalls
+- Forgetting `@functools.wraps(func)` in decorators — without it, `func.__name__` becomes `wrapper`, breaking introspection
+- Loop variable capture in closures: `lambda: i` captures reference to `i`, not its value at creation time
+- `nonlocal` vs `global`: use `nonlocal` to modify enclosing scope variable; `global` for module-level
+- Decorator order matters: `@decorator1 @decorator2 def f()` applies `decorator2` first, then `decorator1`
+
+---
+
 ## Table of Contents
 1. [Function Fundamentals](#function-fundamentals)
 2. [Closures & Scope](#closures--scope)

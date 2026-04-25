@@ -1,5 +1,48 @@
 # LLM Evaluation & Production - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: LLM evaluation is hard because outputs are open-ended. Use a combination of automated metrics, LLM-as-judge, and human evaluation. In production, treat LLMs like any distributed system: observe everything, fail gracefully, iterate continuously.
+
+### Evaluation Strategy by Task Type
+
+| Task | Primary Metric | Secondary | Automated? |
+|------|---------------|-----------|------------|
+| Classification | Accuracy / F1 | Latency | ✓ Yes |
+| Summarization | ROUGE / BERTScore | Faithfulness | Partial |
+| RAG | Faithfulness + Relevancy | Context Recall | LLM-judge |
+| Generation | LLM-as-judge | Human eval | Partial |
+| Code | Execution pass rate | Edit distance | ✓ Yes |
+| Agents | Task completion rate | # steps | ✓ Yes |
+
+### Production Readiness Checklist
+
+```
+Before deploying an LLM application:
+
+▢ Latency measured (p50, p95, p99) under load
+▢ Cost per request estimated and acceptable
+▢ Hallucination rate measured on evaluation set
+▢ Guardrails in place (input/output filters)
+▢ Fallback behavior for LLM unavailability
+▢ Rate limiting and cost caps set
+▢ Prompt injection attacks tested
+▢ PII detection in inputs/outputs (if required)
+▢ Monitoring: latency, errors, token usage, quality scores
+▢ A/B testing plan for model/prompt updates
+▢ Human review workflow for low-confidence outputs
+▢ Model version pinned (avoid silent behavior changes)
+```
+
+### 🚨 Top Interview Pitfalls
+- Using only BLEU/ROUGE for open-ended generation — these metrics miss semantic quality
+- No human evaluation baseline — automated metrics need calibration against human judgments
+- Not monitoring **token usage** in production — costs can explode with long contexts
+- Forgetting that **prompt changes** can silently degrade performance — always A/B test prompt updates
+- No **latency budget**: streaming vs batch vs sync affects UX dramatically
+
+---
+
 ## Table of Contents
 1. [Evaluation Metrics](#evaluation-metrics)
 2. [Benchmarks and Datasets](#benchmarks-and-datasets)

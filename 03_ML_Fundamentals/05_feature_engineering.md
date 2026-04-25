@@ -1,5 +1,83 @@
 # Feature Engineering & Data Preprocessing - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Feature engineering is often more impactful than model selection. Good features encode domain knowledge and make patterns easier for the model to learn. Bad features introduce noise, leakage, or multicollinearity.
+
+### Encoding Strategies for Categorical Variables
+
+| Encoding | When to use | Pitfall |
+|----------|-------------|--------|
+| One-Hot | Low cardinality (< 20), linear models | Curse of dim for high cardinality |
+| Label Encoding | Ordinal categories (S < M < L) | Don't use for nominal! |
+| Target Encoding | High cardinality, gradient boosting | Data leakage — must use out-of-fold! |
+| Frequency Encoding | High cardinality, when frequency signals quality | Loses category identity |
+| Embedding | Very high cardinality (user IDs) | Requires retraining for new values |
+| Binary Encoding | High cardinality, need compression | Less interpretable |
+
+### Handling Missing Values — Strategy Decision Tree
+
+```
+Is missing random (MCAR) or informative (MNAR)?
+
+  MCAR (truly random):
+    Numerical:    mean/median imputation, KNN imputation
+    Categorical:  mode imputation, 'Unknown' category
+    Many missing: consider dropping feature if >50% missing
+
+  MNAR (not random — missingness carries signal):
+    Add a binary 'is_missing' indicator feature FIRST
+    Then impute the original feature
+    e.g., loan_amount missing might mean loan was rejected
+
+  Time series: forward fill (last known value), interpolation
+```
+
+### Feature Scaling — When It Matters
+
+```
+Needs scaling:         Distance/gradient sensitive
+  StandardScaler      Zero mean, unit variance (most common)
+  MinMaxScaler        Range [0,1] (for neural nets, image pixels)
+  RobustScaler        Robust to outliers (uses IQR)
+
+Doesn't need scaling:  Tree-based models
+  Decision Trees       Split on rank, not value
+  Random Forest        Same
+  XGBoost/LightGBM     Same
+
+CRITICAL: Fit scaler on TRAIN data, transform TRAIN and TEST
+  Bad:  scaler.fit_transform(all_data)  ← leaks test distribution!
+  Good: scaler.fit(X_train); scaler.transform(X_test)
+```
+
+### Feature Selection Methods
+
+```python
+from sklearn.feature_selection import SelectKBest, f_classif, RFE
+from sklearn.inspection import permutation_importance
+
+# Filter method: statistical test (fast, model-agnostic)
+sel = SelectKBest(f_classif, k=20)
+X_selected = sel.fit_transform(X_train, y_train)
+
+# Wrapper: Recursive Feature Elimination (model-specific, expensive)
+rfe = RFE(estimator=RandomForestClassifier(), n_features_to_select=20)
+rfe.fit(X_train, y_train)
+
+# Embedded: permutation importance (unbiased, recommended)
+perm = permutation_importance(model, X_val, y_val, n_repeats=10)
+important = perm.importances_mean > 0.001  # threshold
+```
+
+### 🚨 Top Interview Pitfalls
+- **Target leakage**: using features that are derived from or contain the target (e.g., using total charges to predict churn when total charges depend on whether they churned)
+- **Train-test leakage**: fitting scaler/imputer/encoder on full dataset before split
+- Using **label encoding for nominal categories** (SVM, neural nets assume ordinal relationship in numbers)
+- **Target encoding without out-of-fold**: causes massive overfitting; always compute target means on other folds
+
+---
+
 ## Table of Contents
 1. [Data Preprocessing](#data-preprocessing)
 2. [Feature Scaling](#feature-scaling)

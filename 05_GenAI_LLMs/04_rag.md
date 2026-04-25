@@ -1,5 +1,89 @@
 # Retrieval-Augmented Generation (RAG) - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: RAG = separate retrieval from generation. The key challenge is making retrieval accurate enough that the generator can trust it, while keeping latency acceptable.
+
+### RAG Architecture Decision Tree
+
+```
+Do you need up-to-date information beyond training cutoff?
+  YES → RAG is essential
+
+Is the knowledge base large (can't fit in context)?
+  YES → RAG (chunking + vector search)
+  NO  → Long context model might work (Gemini 1.5 Pro, Claude)
+
+Do you need citations/sources?
+  YES → RAG with metadata tracking
+
+Is query-to-document matching simple keyword-based?
+  YES → BM25 alone may suffice
+  NO  → Dense retrieval (embeddings) or hybrid
+
+Do you have high accuracy requirements?
+  YES → Add re-ranking (cross-encoder) after retrieval
+```
+
+### Common Failure Modes
+
+| Failure | Symptom | Fix |
+|---------|---------|-----|
+| Retrieval misses | Answer says "I don't know" for findable facts | Better chunking, hybrid search |
+| Retrieved but ignored | Context has answer, LLM ignores it | Reorder context, stronger prompt |
+| Hallucination despite context | LLM adds facts not in context | Explicit "only use context" instruction, faithfulness check |
+| Lost in middle | Middle chunks ignored | Put key docs at start/end |
+| Chunk boundary cuts | Important text split across chunks | Use overlap (20%), semantic chunking |
+
+### 🚨 Top Interview Pitfalls
+- Forgetting that **embedding model choice** matters — use domain-appropriate embeddings
+- Not addressing **chunking strategy** — chunk size and overlap directly affect retrieval quality
+- Saying "just use cosine similarity" without mentioning re-ranking for production accuracy
+- Missing **data freshness**: who updates the index, and how often?
+- No mention of **evaluation**: how do you know if RAG is working?
+
+### RAG Evaluation Framework (RAGAS)
+
+```python
+# Key metrics for evaluating RAG systems
+RAG_METRICS = {
+    # Retrieval quality
+    "context_precision":  "Fraction of retrieved chunks that are relevant",
+    "context_recall":     "Fraction of relevant chunks that were retrieved",
+    
+    # Generation quality
+    "faithfulness":       "Answer is fully grounded in context (no hallucination)",
+    "answer_relevancy":   "Answer actually addresses the question",
+    
+    # End-to-end
+    "answer_correctness": "Answer matches ground truth (requires reference)",
+}
+
+# Minimum viable RAG evaluation
+def evaluate_rag_response(question, context_docs, answer, llm_judge):
+    # 1. Faithfulness: is every claim in the answer supported by context?
+    faithfulness_prompt = f"""
+    Context: {context_docs}
+    Answer: {answer}
+    
+    Is every statement in the Answer fully supported by the Context? 
+    Return: faithful/unfaithful and list any unsupported claims.
+    """
+    
+    # 2. Relevancy: does the answer address the question?
+    relevancy_prompt = f"""
+    Question: {question}
+    Answer: {answer}
+    Does the Answer address the Question? Score 1-5.
+    """
+    
+    faithfulness = llm_judge.evaluate(faithfulness_prompt)
+    relevancy    = llm_judge.evaluate(relevancy_prompt)
+    return {"faithfulness": faithfulness, "relevancy": relevancy}
+```
+
+---
+
 ## Table of Contents
 1. [RAG Fundamentals](#rag-fundamentals)
 2. [Document Processing](#document-processing)

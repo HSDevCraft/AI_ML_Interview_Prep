@@ -1,5 +1,60 @@
 # RNNs & Sequence Models - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: RNNs process sequences with shared weights but suffer from vanishing gradients over long sequences. LSTM/GRU add gating mechanisms to selectively remember and forget. Transformers replaced them for most tasks via direct attention.
+
+### RNN vs LSTM vs GRU Comparison
+
+| Model | Gates | Handles long deps? | Parameters | Best For |
+|-------|-------|-------------------|------------|----------|
+| RNN | None | ✗ No (vanishing) | Fewer | Very short sequences |
+| LSTM | 3 (forget, input, output) | ✓ Yes | Most | Long sequences, complex patterns |
+| GRU | 2 (reset, update) | ✓ Yes (nearly) | Middle | When LSTM is overkill |
+| Transformer | Attention (no recurrence) | ✓ Yes (direct) | Most | Parallelizable, NLP |
+
+### LSTM Gating Mechanism — Must Know
+
+```
+LSTM has two states: cell state c_t (long-term memory) and hidden state h_t (output)
+
+Forget gate: f_t = σ(W_f[h_{t-1}, x_t] + b_f)    ← what to forget from c_{t-1}
+Input gate:  i_t = σ(W_i[h_{t-1}, x_t] + b_i)    ← what new info to add
+Candidate:   c̃_t = tanh(W_c[h_{t-1}, x_t] + b_c)  ← new candidate values
+Output gate: o_t = σ(W_o[h_{t-1}, x_t] + b_o)    ← what to output
+
+Update:
+  c_t = f_t ⨀ c_{t-1} + i_t ⨀ c̃_t   ← ADDITIVE update (not multiplicative!) → no vanishing!
+  h_t = o_t ⨀ tanh(c_t)
+
+Why additive update solves vanishing gradient:
+  Gradient of c_t w.r.t. c_{t-1} = f_t  (the forget gate)
+  When f_t ≈ 1 (learn to keep), gradient flows perfectly through cell state
+  The cell state is a gradient highway!
+```
+
+### GRU Simplified (2 gates, nearly same performance)
+
+```
+Reset gate:  r_t = σ(W_r[h_{t-1}, x_t])        ← how much of past to use
+Update gate: z_t = σ(W_z[h_{t-1}, x_t])        ← how much to update (like forget+input)
+Candidate:   h̃_t = tanh(W[r_t⨀h_{t-1}, x_t])    ← new candidate with reset gate applied
+Update:      h_t = (1-z_t)⨀h_{t-1} + z_t⨀h̃_t   ← interpolate between old and new
+
+GRU vs LSTM:
+  GRU:  Simpler, fewer params, often matches LSTM performance
+  LSTM: Better for very long sequences, explicit cell state separation
+  Practical: Try GRU first, switch to LSTM if performance insufficient
+```
+
+### 🚨 Top Interview Pitfalls
+- Saying LSTM "solves" vanishing gradient — it **mitigates** it via additive cell update; still struggles for very long sequences (1000+ steps)
+- Not knowing that **bidirectional RNNs** use TWO RNNs (forward + backward) and concatenate hidden states — better for understanding, can't use for generation
+- Forgetting that **Transformers didn't kill RNNs for everything** — RNNs are still used for streaming (online) inference where full sequence isn't available at once
+- Confusing the **hidden state h_t** (output) with **cell state c_t** (internal memory) in LSTM
+
+---
+
 ## Table of Contents
 1. [Vanilla RNN](#vanilla-rnn)
 2. [LSTM](#lstm)

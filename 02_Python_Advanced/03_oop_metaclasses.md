@@ -1,5 +1,100 @@
 # OOP, Metaclasses & Descriptors - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Python OOP is built on dunder methods. Every operator, comparison, container behavior, and context manager is a dunder method call. Understanding this unlocks the entire object model.
+
+### OOP Pillars — Python Implementation
+
+```python
+# ENCAPSULATION: control access via naming conventions
+class BankAccount:
+    def __init__(self, balance):
+        self._balance = balance      # protected (convention: don't access directly)
+        self.__secret = "hidden"     # private (name-mangled to _BankAccount__secret)
+    
+    @property                         # encapsulate attribute access
+    def balance(self): return self._balance
+    
+    @balance.setter
+    def balance(self, value):
+        if value < 0: raise ValueError("Balance cannot be negative")
+        self._balance = value
+
+# INHERITANCE: isinstance() and MRO (Method Resolution Order)
+class Animal:
+    def speak(self): return "..."
+
+class Dog(Animal):
+    def speak(self): return "Woof!"  # override
+
+class GuideDog(Dog):
+    def speak(self): return super().speak() + " (I'm a guide dog)"
+
+# MRO: Python uses C3 linearization for diamond inheritance
+# print(GuideDog.__mro__) to see the resolution order
+
+# POLYMORPHISM: duck typing
+def make_speak(animal):  # works for ANY object with .speak()
+    return animal.speak()
+```
+
+### Essential Dunder Methods — Must Know
+
+```python
+class Vector:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+    
+    def __repr__(self): return f"Vector({self.x}, {self.y})"   # unambiguous repr for devs
+    def __str__(self):  return f"({self.x}, {self.y})"         # readable repr for users
+    def __eq__(self, other): return self.x == other.x and self.y == other.y  # ==
+    def __hash__(self): return hash((self.x, self.y))  # needed if __eq__ defined!
+    def __add__(self, other): return Vector(self.x+other.x, self.y+other.y)  # +
+    def __len__(self): return 2                        # len()
+    def __getitem__(self, i): return (self.x, self.y)[i]  # v[0], v[1]
+    def __iter__(self): return iter((self.x, self.y))    # for x in v
+    def __contains__(self, val): return val in (self.x, self.y)  # in operator
+    
+    # Context manager protocol
+    def __enter__(self): return self
+    def __exit__(self, exc_type, exc_val, exc_tb): return False  # don't suppress exceptions
+```
+
+### Abstract Classes vs Interfaces
+
+```python
+from abc import ABC, abstractmethod
+
+class Shape(ABC):       # Abstract Base Class
+    @abstractmethod
+    def area(self) -> float:    # MUST be implemented by subclasses
+        pass
+    
+    @abstractmethod
+    def perimeter(self) -> float:
+        pass
+    
+    def describe(self):         # concrete method (can be inherited)
+        return f"Area={self.area():.2f}, Perimeter={self.perimeter():.2f}"
+
+class Circle(Shape):
+    def __init__(self, r): self.r = r
+    def area(self): return 3.14159 * self.r ** 2
+    def perimeter(self): return 2 * 3.14159 * self.r
+
+# Shape()  # TypeError: Can't instantiate abstract class
+c = Circle(5)  # OK, all abstractmethods implemented
+```
+
+### 🚨 Top Interview Pitfalls
+- Defining `__eq__` without defining `__hash__` — Python sets `__hash__ = None`, making objects unhashable (can't use in sets/dicts)
+- Forgetting `__repr__` — always implement it; `__str__` falls back to `__repr__` if not defined, but not vice versa
+- `super()` in multiple inheritance: always use `super()`, not `ParentClass.method(self)`, to respect MRO
+- Mutable class attributes vs instance attributes: `class Foo: items = []` creates ONE list shared by ALL instances
+
+---
+
 ## Table of Contents
 1. [OOP Fundamentals](#oop-fundamentals)
 2. [Inheritance & MRO](#inheritance--mro)

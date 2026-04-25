@@ -1,5 +1,93 @@
 # Trees - Complete In-Depth Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Trees are recursion made visual. Master the four traversals and the general DFS pattern, and 90% of tree problems follow from those building blocks.
+
+### Tree Traversals — Know All 4
+
+```python
+def inorder(root):    # Left → Root → Right  (BST: sorted order!)
+    if root:
+        inorder(root.left)
+        process(root.val)
+        inorder(root.right)
+
+def preorder(root):   # Root → Left → Right  (copy/serialize tree)
+    if root:
+        process(root.val)
+        preorder(root.left)
+        preorder(root.right)
+
+def postorder(root):  # Left → Right → Root  (delete tree, evaluate expressions)
+    if root:
+        postorder(root.left)
+        postorder(root.right)
+        process(root.val)
+
+from collections import deque
+def level_order(root): # BFS  (level-by-level, shortest path in unweighted tree)
+    if not root: return
+    q = deque([root])
+    while q:
+        for _ in range(len(q)):  # process one level at a time
+            node = q.popleft()
+            process(node.val)
+            if node.left:  q.append(node.left)
+            if node.right: q.append(node.right)
+```
+
+### General DFS Pattern — Template for Most Tree Problems
+
+```python
+def solve(root):
+    # Base case
+    if not root:
+        return base_value  # 0, None, True, float('inf'), etc.
+    
+    # Recurse on children
+    left_result  = solve(root.left)
+    right_result = solve(root.right)
+    
+    # Combine results
+    return combine(root.val, left_result, right_result)
+
+# Examples:
+# Height:     return 1 + max(left, right)
+# Min depth:  return 1 + min(left, right) [handle None children!]
+# Path sum:   return root.val + max(left, right)  [if negative, take 0]
+# Is same:    return root1.val==root2.val and left and right
+```
+
+### BST Properties — Critical for Interviews
+
+```
+BST Invariant: left subtree values < node.val < right subtree values
+  → This applies to ALL ancestors, not just immediate parent!
+  (Common pitfall: only checking root.left.val < root.val)
+
+BST operations: O(h) where h = height
+  Balanced BST (AVL, Red-Black): h = O(log n)
+  Degenerate (sorted input): h = O(n)  ← list, not tree!
+
+BST Search:
+  if target < node.val: go left
+  if target > node.val: go right
+  if target == node.val: found!
+
+BST Successor:
+  If right subtree exists: leftmost node in right subtree
+  Else: first ancestor where current is in left subtree
+```
+
+### 🚨 Top Interview Pitfalls
+- For **BST validation**: never check only `left.val < root.val < right.val` — must propagate valid range through entire subtree
+- For **tree height**: base case should return 0 for `None` (not -1 or 1); height = 1 + max(left, right)
+- For **min-depth**: when one child is None, don't return 0 (that's wrong) — return depth of the existing child
+- For **LCA**: track whether each subtree contains p/q; when a node has both p and q in different subtrees, it's the LCA
+
+---
+
 ## Table of Contents
 1. [Fundamentals](#fundamentals)
 2. [Binary Tree Traversals](#binary-tree-traversals)

@@ -1,5 +1,27 @@
 # ML System Design Interview Questions
 
+> **Interview mindset**: ML system design is about demonstrating judgment under constraints. There's no single right answer — show you understand trade-offs, can prioritize, and think about real-world complexity (data, latency, scale, failure modes).
+
+## Critical Interviewer Signals
+
+| What they want to see | How to demonstrate it |
+|----------------------|----------------------|
+| Requirements clarity | Ask 3-4 scoping questions before diving in |
+| ML judgment | Justify model choice with trade-offs, not just "I'd use XGBoost" |
+| Scale awareness | Mention latency budgets, QPS, data volume proactively |
+| Failure thinking | Discuss what breaks, how to detect it, how to recover |
+| Iteration mindset | Start simple, then evolve — show roadmap thinking |
+
+## Common Mistakes to Avoid
+
+- **Jumping to models** before clarifying requirements and success metrics
+- **Ignoring training data** — how will you get labels? What's the label quality?
+- **Forgetting the serving gap** — features used in training must be available at inference
+- **No monitoring plan** — always address: how do you know when the model breaks?
+- **Single model thinking** — most production systems use multi-stage pipelines
+
+---
+
 ## Table of Contents
 1. [Framework for ML System Design](#framework-for-ml-system-design)
 2. [Recommendation Systems](#recommendation-systems)
@@ -14,55 +36,85 @@
 
 ## Framework for ML System Design
 
-### Step-by-Step Approach
+### Step-by-Step Approach (45-60 min interview)
+
 ```
-1. CLARIFY REQUIREMENTS (5 min)
-   Functional:
-   - What exactly are we predicting/classifying?
-   - Who are the users? What's the use case?
-   - What's the input? What's the expected output?
-   
-   Non-functional:
-   - Scale: QPS, data volume, user count
-   - Latency: Real-time vs batch
-   - Accuracy requirements
-   - Freshness: How often should model update?
+1. CLARIFY REQUIREMENTS (5 min) — ASK BEFORE DESIGNING
+
+   Functional clarifications:
+   • "What exactly are we predicting? Who are the end users?"
+   • "What's the input format? What's the expected output?"
+   • "What's the current system? What are its failure modes?"
+
+   Non-functional (scale/constraints):
+   • "What's the scale? (QPS, users, items, data volume)"
+   • "What's the latency budget? Real-time (<100ms) or batch?"
+   • "What's the accuracy requirement? What's the cost of each error type?"
+   • "How fresh does the model need to be?"
 
 2. FRAME AS ML PROBLEM (5 min)
-   - Is ML needed? (vs rules/heuristics)
-   - Supervised vs unsupervised
-   - Classification vs regression vs ranking
-   - Define the prediction target
-   - Define success metrics (offline + online)
+   • Is ML even needed? (rules/heuristics might suffice)
+   • What is the prediction target? (proxy metric vs business metric)
+   • Supervised / Unsupervised / Self-supervised?
+   • Classification / Regression / Ranking / Generation?
+   • Offline metric: what do you measure in experiments?
+   • Online metric: what do you A/B test?
 
-3. DATA (10 min)
-   - What data is available?
-   - How to collect labels?
-   - Data volume and storage
-   - Feature engineering opportunities
-   - Training/validation/test split strategy
+3. DATA (10 min) — often the most important part
+   • Data sources: logs, user behavior, 3rd party
+   • Label strategy: explicit ratings? clicks (noisy)? human annotation?
+   • Label quality: bias, delay, sparsity
+   • Features: what signals exist? what needs engineering?
+   • Training/validation split: temporal split for time-series data!
+   • Class imbalance, data leakage risks
 
 4. MODEL (10 min)
-   - Baseline model
-   - Advanced approaches
-   - Trade-offs (accuracy vs latency vs interpretability)
-   - Training pipeline
+   • Start with a strong baseline (logistic regression, XGBoost)
+   • Explain why you'd advance to complex models
+   • Discuss trade-offs explicitly:
+     - Accuracy vs latency vs interpretability vs maintenance cost
+     - Online learning vs periodic retraining
 
 5. EVALUATION (5 min)
-   - Offline metrics
-   - Online metrics (A/B testing)
-   - Failure modes
+   • Offline: what metric on what dataset?
+   • Online: A/B test design (randomization unit, duration, sample size)
+   • Failure modes: what happens when model is wrong?
+   • Guardrails: what prevents catastrophic mistakes?
 
 6. DEPLOYMENT & SERVING (5 min)
-   - Batch vs online serving
-   - Latency optimization
-   - Scaling strategy
+   • Batch vs real-time inference (trade-offs!)
+   • Feature store: avoid train-serving skew
+   • Model versioning: canary, A/B, shadow deployment
+   • Latency optimizations: caching, quantization, batching
 
-7. MONITORING & ITERATION (5 min)
-   - What to monitor
-   - Drift detection
-   - Feedback loops
-   - Retraining strategy
+7. MONITORING & MAINTENANCE (5 min)
+   • System health: latency p99, error rate, throughput
+   • Data drift: input distribution changes
+   • Model drift: prediction distribution, performance degradation
+   • Retraining triggers: time-based vs performance-based
+   • Feedback loop: how does model affect future data?
+```
+
+### Trade-off Framework (use for every decision)
+
+```
+When choosing between options A and B, always discuss:
+
+1. ACCURACY vs LATENCY:
+   "Option A is more accurate but requires 200ms; Option B is 98% as good but runs in 20ms.
+    Given our <100ms budget, I'd choose B."
+
+2. COMPLEXITY vs MAINTAINABILITY:
+   "A deep neural network would perform better, but XGBoost is:
+    - Easier to debug (feature importance, SHAP values)
+    - Faster to iterate on
+    - More interpretable for compliance/regulation
+    I'd start with XGBoost and only move to NN if it doesn't hit our metric targets."
+
+3. FRESHNESS vs COST:
+   "Real-time training gives freshest model but requires expensive streaming infra.
+    Daily batch retraining covers 95% of cases at 10% of the cost.
+    I'd start with daily and move to streaming only if we see significant freshness-related drift."
 ```
 
 ---

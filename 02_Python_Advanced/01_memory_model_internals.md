@@ -1,5 +1,89 @@
 # Python Memory Model & Internals - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Python uses reference counting + cyclic garbage collection. Everything is an object. The GIL makes CPython thread-safe for individual operations but prevents true CPU parallelism in threads.
+
+### Mutability — Critical for Interviews
+
+```python
+# MUTABLE: list, dict, set, bytearray (can change in-place)
+my_list = [1, 2, 3]
+my_list.append(4)       # same object, mutated
+id_before = id(my_list)
+my_list[0] = 99
+print(id(my_list) == id_before)  # True: same object
+
+# IMMUTABLE: int, float, str, tuple, frozenset, bytes
+x = 5
+y = x
+x = 10
+print(y)  # 5 (y still points to old int object, not x)
+
+# The classic mutable default argument pitfall:
+def add_item(item, lst=[]):   # WRONG! lst is created ONCE
+    lst.append(item)
+    return lst
+print(add_item(1))  # [1]
+print(add_item(2))  # [1, 2]  ← NOT [2]!
+
+def add_item_correct(item, lst=None):  # RIGHT!
+    if lst is None:
+        lst = []
+    lst.append(item)
+    return lst
+```
+
+### is vs == — A Favorite Interview Question
+
+```python
+# == checks VALUE equality (calls __eq__)
+# is  checks IDENTITY (same object in memory, same id())
+
+a = [1, 2, 3]
+b = [1, 2, 3]
+print(a == b)   # True  (same value)
+print(a is b)   # False (different objects)
+
+# Integer interning (CPython caches -5 to 256)
+x = 256; y = 256
+print(x is y)   # True  (cached/interned)
+z = 257; w = 257
+print(z is w)   # False (NOT cached, depends on context)
+
+# String interning: string literals are usually interned
+s1 = "hello"
+s2 = "hello"
+print(s1 is s2)  # Usually True (interned), but don't rely on it!
+# Rule: use == for value comparison, is only for None/True/False
+```
+
+### The GIL — Must Explain Clearly
+
+```
+GIL (Global Interpreter Lock): mutex that allows only ONE Python thread
+to execute bytecode at a time in CPython.
+
+Implication:
+  CPU-bound tasks:  threads DON'T help (GIL prevents parallelism)
+  IO-bound tasks:   threads DO help (GIL released during IO wait)
+
+Solutions for CPU-bound parallelism:
+  multiprocessing: separate processes, each has own GIL
+  concurrent.futures.ProcessPoolExecutor: high-level multiprocessing
+  numpy/PyTorch: release GIL for C-extension operations
+  Cython, Numba: compile to C, release GIL
+  PyPy: different JIT runtime (no GIL in some versions)
+```
+
+### 🚨 Top Interview Pitfalls
+- Mutable **default arguments** in function definitions — use `None` and initialize inside
+- Copying lists: `b = a` is an alias (same object); `b = a[:]` or `b = a.copy()` is a shallow copy
+- **Shallow vs deep copy**: `copy.copy()` copies the container, not nested objects; `copy.deepcopy()` copies everything
+- Saying threads solve CPU-bound problems in Python — they don't due to the GIL; use `multiprocessing`
+
+---
+
 ## Table of Contents
 1. [Object Model](#object-model)
 2. [Memory Management](#memory-management)

@@ -1,5 +1,72 @@
 # Prompt Engineering - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Prompt engineering is **model-interface design**. The model is frozen; you control the context it sees. Good prompts are precise, structured, and provide exactly the context needed.
+
+### Prompt Technique Cheat Sheet
+
+| Technique | When to use | Key mechanism |
+|-----------|-------------|---------------|
+| Zero-shot | Simple, well-understood tasks | Model's pretraining knowledge |
+| Few-shot | Complex format or niche tasks | In-context learning |
+| Chain-of-Thought | Multi-step reasoning, math | Forces step-by-step thinking |
+| Self-consistency | High-stakes answers | Majority vote over multiple CoT paths |
+| ReAct | Agents with tool use | Interleave reasoning + action |
+| Tree of Thoughts | Complex planning | Explore + backtrack multiple paths |
+| Generated Knowledge | Factual questions | Prompt model to generate facts first |
+
+### 🚨 Top Interview Pitfalls
+- Thinking prompt engineering is just "writing better instructions" — it's about understanding how attention and token probability work
+- Not mentioning **prompt injection** as a security risk in production
+- Forgetting that **temperature** and **top-p** affect output more than prompt wording for creative tasks
+- Not validating LLM outputs — always add output parsing, retry logic, and validation in production
+
+### Best Practices for Production Prompts
+
+```python
+# Production prompt template with all best practices
+def build_production_prompt(
+    task: str,
+    context: str = "",
+    examples: list = None,
+    output_format: str = "",
+) -> str:
+    """
+    Best practice production prompt structure:
+    1. System role (persona + task scope)
+    2. Context (relevant information)
+    3. Examples (few-shot, if needed)
+    4. Task instruction (clear, specific)
+    5. Output format (explicit structure)
+    6. Constraints (what to avoid)
+    """
+    sections = []
+    
+    # 1. Clear role definition
+    sections.append(f"You are a {task} expert. Your goal is to {task} accurately and concisely.")
+    
+    # 2. Context (if provided)
+    if context:
+        sections.append(f"Context:\n{context}")
+    
+    # 3. Few-shot examples (if needed)
+    if examples:
+        ex_text = "\n".join([f"Input: {e['input']}\nOutput: {e['output']}" for e in examples])
+        sections.append(f"Examples:\n{ex_text}")
+    
+    # 4. Explicit output format
+    if output_format:
+        sections.append(f"Output your response in this exact format:\n{output_format}")
+    
+    # 5. Constraints
+    sections.append("If uncertain, say 'I don't know' rather than guessing. Be concise.")
+    
+    return "\n\n".join(sections)
+```
+
+---
+
 ## Table of Contents
 1. [Prompting Fundamentals](#prompting-fundamentals)
 2. [Advanced Prompting Techniques](#advanced-prompting-techniques)

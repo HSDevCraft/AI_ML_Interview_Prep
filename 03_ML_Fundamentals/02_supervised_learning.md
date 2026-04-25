@@ -1,5 +1,48 @@
 # Supervised Learning - Complete Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Supervised learning finds a function f(x) ≈ y from labeled examples. The entire field is about the bias-variance tradeoff: how complex should f be, and how do we prevent it from memorizing noise?
+
+### Algorithm Selection Guide
+
+| Algorithm | Best When | Strength | Weakness |
+|-----------|-----------|----------|----------|
+| Linear/Logistic Regression | Linear relationships, need interpretability | Fast, calibrated | Can't capture non-linearity |
+| Decision Trees | Non-linear, categorical features, interpretability needed | Visual, handles mixed types | High variance, overfits |
+| Random Forest | General purpose, good baseline | Low variance, handles missing | Slow inference, black box |
+| XGBoost / LightGBM | Tabular data competition | Best for tabular, handles NaN | Slow to tune |
+| SVM | Small dataset, high-dim features | Max margin, kernel trick | Slow O(n²-n³), needs scaling |
+| KNN | Baseline, anomaly detection | Simple, no training | O(n) inference, curse of dim |
+| Naive Bayes | Text classification | Fast, good for NLP | Assumes feature independence |
+| Neural Networks | Complex patterns, images, text | Universal approximator | Needs lots of data, slow |
+
+### Key Loss Functions — Know Which to Use When
+
+```
+Regression:
+  MSE:   L = (y - ŷ)²         ← penalizes outliers heavily (squared)
+  MAE:   L = |y - ŷ|          ← robust to outliers (linear)
+  Huber: L = MSE if |δ|<δ, MAE otherwise  ← best of both
+
+Classification:
+  Cross-entropy: L = -Σ y_i log(ŷ_i)   ← measures distribution mismatch
+  Binary CE:     L = -[y log(p) + (1-y) log(1-p)]  ← logistic regression
+  Focal loss:    L = -α(1-p)^γ log(p)  ← for imbalanced (down-weight easy)
+
+Regularized:
+  Ridge: MSE + λ||w||²   ← L2, shrinks weights, closed-form solution
+  Lasso: MSE + λ||w||    ← L1, sparse weights, feature selection
+```
+
+### 🚨 Top Interview Pitfalls
+- Recommending neural networks for tabular data before trying **XGBoost/LightGBM** (which usually wins on tabular)
+- Forgetting to **scale features** before SVM, KNN, or neural networks (tree-based methods don't need scaling)
+- Using MSE for classification or cross-entropy for regression (always match loss to task)
+- Not mentioning **class_weight='balanced'** or threshold tuning for imbalanced classification
+
+---
+
 ## Table of Contents
 1. [Regression Algorithms](#regression-algorithms)
 2. [Classification Algorithms](#classification-algorithms)

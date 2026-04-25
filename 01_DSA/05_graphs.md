@@ -1,5 +1,113 @@
 # Graphs - Complete In-Depth Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Graphs = nodes + edges. 90% of graph problems use BFS (shortest path, levels) or DFS (connectivity, cycles, topological sort). Know which algorithm solves which problem type.
+
+### Algorithm Selection Guide
+
+| Problem Type | Algorithm | Time | Space |
+|-------------|-----------|------|-------|
+| Shortest path (unweighted) | BFS | O(V+E) | O(V) |
+| Shortest path (weighted, non-neg) | Dijkstra | O((V+E) log V) | O(V) |
+| Shortest path (neg weights) | Bellman-Ford | O(VE) | O(V) |
+| All-pairs shortest path | Floyd-Warshall | O(V³) | O(V²) |
+| Topological sort | Kahn's (BFS) or DFS | O(V+E) | O(V) |
+| Connected components | Union-Find or BFS/DFS | O(Vα(V)) | O(V) |
+| Cycle detection (directed) | DFS with colors | O(V+E) | O(V) |
+| Cycle detection (undirected) | Union-Find | O(Vα(V)) | O(V) |
+| Minimum spanning tree | Prim's / Kruskal's | O(E log V) | O(V) |
+
+### BFS vs DFS Decision
+
+```
+Use BFS when:
+  ✓ Shortest path in UNWEIGHTED graph
+  ✓ Level-by-level processing
+  ✓ Finding ALL nodes within distance k
+  ✓ Minimum steps/moves problems
+
+Use DFS when:
+  ✓ Detecting cycles
+  ✓ Topological sort
+  ✓ Exploring ALL paths (backtracking)
+  ✓ Connected components
+  ✓ Tree traversal (trees are graphs!)
+```
+
+### Templates — Use These Every Time
+
+```python
+from collections import defaultdict, deque
+
+# BFS template
+def bfs(graph, start):
+    visited = {start}
+    queue = deque([(start, 0)])  # (node, distance)
+    while queue:
+        node, dist = queue.popleft()
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, dist + 1))
+
+# DFS template (iterative, avoids stack overflow for large graphs)
+def dfs(graph, start):
+    visited = set()
+    stack = [start]
+    while stack:
+        node = stack.pop()
+        if node not in visited:
+            visited.add(node)
+            for neighbor in graph[node]:
+                if neighbor not in visited:
+                    stack.append(neighbor)
+
+# Topological sort (Kahn's algorithm)
+def topo_sort(n, edges):
+    graph = defaultdict(list)
+    in_degree = [0] * n
+    for u, v in edges:
+        graph[u].append(v)
+        in_degree[v] += 1
+    queue = deque([i for i in range(n) if in_degree[i] == 0])
+    order = []
+    while queue:
+        node = queue.popleft()
+        order.append(node)
+        for neighbor in graph[node]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+    return order if len(order) == n else []  # empty = cycle detected!
+
+# Union-Find (for connected components, cycle detection)
+class UnionFind:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.rank = [0] * n
+    def find(self, x):  # path compression
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+    def union(self, x, y):  # union by rank
+        px, py = self.find(x), self.find(y)
+        if px == py: return False  # cycle!
+        if self.rank[px] < self.rank[py]: px, py = py, px
+        self.parent[py] = px
+        if self.rank[px] == self.rank[py]: self.rank[px] += 1
+        return True
+```
+
+### 🚨 Top Interview Pitfalls
+- Using DFS for shortest path in unweighted graph — DFS finds A path, not the SHORTEST path. Use BFS.
+- Not tracking visited nodes in BFS/DFS — infinite loop on cycles
+- Applying Dijkstra to graphs with **negative edges** — use Bellman-Ford instead
+- Topological sort: if output length != n, there's a cycle (not a DAG)
+- For grid problems: treat each cell as a graph node; neighbors are up/down/left/right
+
+---
+
 ## Table of Contents
 1. [Fundamentals](#fundamentals)
 2. [Graph Representations](#graph-representations)

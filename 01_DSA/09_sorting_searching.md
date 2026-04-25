@@ -1,5 +1,74 @@
 # Sorting & Searching - Complete In-Depth Guide
 
+## ⚡ Interview Quick Summary
+
+> **Core insight**: Know O(n log n) sorting cold. For binary search, the hardest part is getting the boundaries right — use the template and always verify with a 2-element array.
+
+### Sorting Algorithm Comparison
+
+| Algorithm | Time (avg) | Time (worst) | Space | Stable? | Use When |
+|-----------|-----------|-------------|-------|---------|----------|
+| Merge Sort | O(n log n) | O(n log n) | O(n) | ✓ | Linked lists, stable sort needed |
+| Quick Sort | O(n log n) | O(n²) | O(log n) | ✗ | In-practice fastest, arrays |
+| Heap Sort | O(n log n) | O(n log n) | O(1) | ✗ | O(1) space + O(n log n) guaranteed |
+| Tim Sort | O(n log n) | O(n log n) | O(n) | ✓ | Python/Java default (merge+insertion) |
+| Counting Sort | O(n+k) | O(n+k) | O(k) | ✓ | Small integer range |
+| Radix Sort | O(nk) | O(nk) | O(n+k) | ✓ | Large integers, fixed-length strings |
+
+### Binary Search Templates — The Only Templates You Need
+
+```python
+# TEMPLATE 1: Find exact target
+def binary_search(nums, target):
+    left, right = 0, len(nums) - 1
+    while left <= right:           # <= because single element is valid
+        mid = left + (right - left) // 2  # avoid overflow (safe in Python but good habit)
+        if nums[mid] == target:
+            return mid
+        elif nums[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+# TEMPLATE 2: Find leftmost position where condition is True
+# "Find first bad version", "Search insert position"
+def find_left(nums, target):
+    left, right = 0, len(nums)    # right = n (not n-1!)
+    while left < right:            # < not <=
+        mid = (left + right) // 2
+        if nums[mid] >= target:    # condition: nums[mid] is 'too big or equal'
+            right = mid            # shrink right (keep mid as candidate)
+        else:
+            left = mid + 1         # mid is definitely not it
+    return left                    # left == right == insertion point
+
+# TEMPLATE 3: Binary search on ANSWER (not on array)
+# "Minimum capacity", "Koko eating bananas", "Split array largest sum"
+def binary_search_on_answer(condition_fn, lo, hi):
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if condition_fn(mid):   # mid satisfies condition
+            hi = mid             # search for smaller valid answer
+        else:
+            lo = mid + 1
+    return lo
+
+# Example: find minimum speed to eat all bananas in h hours
+def min_speed(piles, h):
+    def can_finish(speed):
+        return sum((p + speed - 1) // speed for p in piles) <= h
+    return binary_search_on_answer(can_finish, 1, max(piles))
+```
+
+### 🚨 Top Interview Pitfalls
+- `mid = (left + right) // 2` can overflow in C/Java (use `left + (right-left)//2`); safe in Python but good habit
+- **Infinite loop**: `while left < right` with `right = mid` requires `mid` to strictly decrease; ensure `mid = (left+right)//2` (floor) when shrinking right
+- Quick sort worst case O(n²) on sorted/reverse-sorted input without randomization — always shuffle or use random pivot
+- Binary search on answer: identify the monotonic property first ("as X increases, condition changes from False to True")
+
+---
+
 ## Table of Contents
 1. [Sorting Algorithms](#sorting-algorithms)
 2. [Binary Search Patterns](#binary-search-patterns)
